@@ -7,14 +7,14 @@ extern "C" {
     #include <quickjs.h>
 }
 
+// Helper function to format JavaScript arguments into a single string
 std::string format_js_args(JSContext *ctx, const int argc, const JSValue *argv) {
     std::string output;
     for (int i = 0; i < argc; i++) {
         // Convert the JavaScript value to a string representation
-        JSValue str_val = JS_ToString(ctx, argv[i]);
-        const char *cstr = JS_ToCString(ctx, str_val);
+        const JSValue str_val = JS_ToString(ctx, argv[i]);
 
-        if (cstr) {
+        if (const char *cstr = JS_ToCString(ctx, str_val)) {
             output += cstr;
             if (i < argc - 1) {
                 output += " "; // Add space between arguments
@@ -26,7 +26,7 @@ std::string format_js_args(JSContext *ctx, const int argc, const JSValue *argv) 
     return output;
 }
 
-// C function signature for QuickJS host functions
+// function signature for QuickJS host functions
 static JSValue js_console_log(JSContext *ctx, JSValueConst this_val, const int argc, JSValueConst *argv) {
     // Cast JSValueConst* to JSValue* for use in format_js_args
     std::string output = format_js_args(ctx, argc, argv);
@@ -38,7 +38,7 @@ static JSValue js_console_log(JSContext *ctx, JSValueConst this_val, const int a
     return JS_UNDEFINED;
 }
 
-// C function for console.error
+// function for console.error
 static JSValue js_console_error(JSContext *ctx, JSValueConst this_val, const int argc, JSValueConst *argv) {
     std::string output = format_js_args(ctx, argc, argv);
 
@@ -56,10 +56,11 @@ static const JSCFunctionListEntry js_console_funcs[] = {
 
 // Function to install the 'console' object
 void install_console_global(JSContext *ctx) {
-    // 1. Create a new JavaScript object named 'console'
+
+    // Create a new JavaScript object named 'console'
     const JSValue console = JS_NewObject(ctx);
 
-    // 2. Add our C functions as methods to the 'console' object
+    // Add our C functions as methods to the 'console' object
     JS_SetPropertyFunctionList(
         ctx,
         console,
@@ -67,7 +68,7 @@ void install_console_global(JSContext *ctx) {
         sizeof(js_console_funcs) / sizeof(JSCFunctionListEntry)
     );
 
-    // 3. Set the 'console' object as a global property
+    // Set the 'console' object as a global property
     JS_SetPropertyStr(
         ctx,
         JS_GetGlobalObject(ctx), // Get the global object (like 'window' in a browser)
@@ -76,7 +77,6 @@ void install_console_global(JSContext *ctx) {
     );
 }
 
-// --- Internal Helper Function: Read File ---
 std::string read_file(const std::string& filepath) {
     std::ifstream file(filepath);
     if (!file.is_open()) {
@@ -89,16 +89,16 @@ std::string read_file(const std::string& filepath) {
     return buffer.str();
 }
 
-// --- Main Execution Function Implementation ---
 int run_js_file(const std::string& filepath) {
-    // 1. Read the file content
+
+    // Read the file content
     std::string js_code = read_file(filepath);
     if (js_code.empty()) {
         // Error message already printed by read_file if it failed to open
         return 1;
     }
 
-    // 2. Create a QuickJS Runtime and Context
+    // Create a QuickJS Runtime and Context
     JSRuntime *rt = JS_NewRuntime();
     if (!rt) {
         std::cerr << "Error: Could not create QuickJS runtime." << std::endl;
@@ -114,10 +114,10 @@ int run_js_file(const std::string& filepath) {
     // Install the 'console' global object
     install_console_global(ctx);
 
-    // 3. Compile and Execute the JavaScript code
-    JSValue val = JS_Eval(ctx, js_code.c_str(), js_code.length(), filepath.c_str(), JS_EVAL_FLAG_STRICT);
+    // Compile and Execute the JavaScript code
+    const JSValue val = JS_Eval(ctx, js_code.c_str(), js_code.length(), filepath.c_str(), JS_EVAL_FLAG_STRICT);
 
-    // 4. Handle Execution Result (Success or Error)
+    // Handle Execution Result (Success or Error)
     if (JS_IsException(val)) {
         std::cerr << "--- JavaScript Execution Error in " << filepath << " ---" << std::endl;
 
@@ -137,12 +137,10 @@ int run_js_file(const std::string& filepath) {
         JS_FreeContext(ctx);
         JS_FreeRuntime(rt);
         return 1; // Indicate failure
-    } else {
-        // Clean up successful execution value
-        JS_FreeValue(ctx, val);
     }
 
-    // 5. Clean up QuickJS resources
+    // Clean up QuickJS resources
+    JS_FreeValue(ctx, val);
     JS_FreeContext(ctx);
     JS_FreeRuntime(rt);
 
