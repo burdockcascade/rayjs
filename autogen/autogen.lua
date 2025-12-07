@@ -15,12 +15,12 @@ local cats = {
         "CloseWindow",
         "IsWindowReady",
         "SetWindowPosition",
-        --"SetWindowTitle",
+        "SetWindowTitle",
         "GetScreenWidth",
         "GetScreenHeight",
         "SetTargetFPS",
-        --"GetFPS",
-        --"GetFrameTime",
+        "GetFPS",
+        "GetFrameTime",
         "BeginDrawing",
         "EndDrawing",
         "ClearBackground",
@@ -29,7 +29,7 @@ local cats = {
         --"BeginMode3D",
         --"EndMode3D",
         --"TakeScreenshot",
-        --"WaitTime",
+        "WaitTime",
     }
 }
 
@@ -57,6 +57,13 @@ local conversion_map = {
         friendly_name = "integer",
     },
     ["float"] = {
+        to_js = "JS_NewFloat64",
+        from_js = "JS_ToFloat64",
+        qjs_type = "double",
+        validation = "JS_IsNumber",
+        friendly_name = "number",
+    },
+    ["double"] = {
         to_js = "JS_NewFloat64",
         from_js = "JS_ToFloat64",
         qjs_type = "double",
