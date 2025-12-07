@@ -4,10 +4,16 @@ on:
     branches:
       - main
       - master
+    paths:
+      - src
+      - xmake.lua
   push:
     branches:
       - main
       - master
+    paths:
+      - src
+      - xmake.lua
 jobs:
   linux-build:
     runs-on: ubuntu-latest
