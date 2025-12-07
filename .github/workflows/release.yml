@@ -17,6 +17,5 @@ jobs:
     steps:
       - uses: google-github-actions/release-please-action@v4
         with:
-          # This assumes your config files are in the root
           config-file: release-please-config.json
           manifest-file: .release-please-manifest.json
