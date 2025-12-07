@@ -1,6 +1,5 @@
 // Auto-generated raylib bindings
-#ifndef RAYLIB_AUTOGEN_STRUCTS_HPP
-#define RAYLIB_AUTOGEN_STRUCTS_HPP
+#pragma once
 
 #include "quickjs.h"
 
@@ -40,5 +39,3 @@ inline JSClassID js_AutomationEvent_class_id;
 inline JSClassID js_AutomationEventList_class_id;
 
 void js_define_raylib_structs(JSContext *ctx, JSValue target);
-
-#endif // RAYLIB_AUTOGEN_STRUCTS_HPP

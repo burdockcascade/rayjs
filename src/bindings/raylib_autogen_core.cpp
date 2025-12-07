@@ -283,34 +283,6 @@ static JSValue js_ClearBackground(JSContext *ctx, JSValueConst this_val, const i
 	return JS_UNDEFINED;
 }
 
-// Binding for WaitTime
-static JSValue js_WaitTime(JSContext *ctx, JSValueConst this_val, const int argc, JSValueConst *argv) {
-	if (argc != 1) {
-		return JS_ThrowTypeError(ctx, "Expected 1 arguments, got %d", argc);
-	}
-
-	// Argument 1: double seconds
-	if (JS_IsNull(argv[0])) {
-		return JS_ThrowTypeError(ctx, "Argument 1: value is null");
-	}
-
-	if (JS_IsUndefined(argv[0])) {
-		return JS_ThrowTypeError(ctx, "Argument 1: value is undefined");
-	}
-
-	if (!JS_IsNumber(argv[0])) {
-		return JS_ThrowTypeError(ctx, "Argument 1: expected double");
-	}
-
-	double seconds;
-	if (JS_ToFloat64(ctx, &seconds, argv[0]) < 0) {
-		return JS_ThrowTypeError(ctx, "Argument 1: expected number");
-	}
-
-	WaitTime(seconds);
-	return JS_UNDEFINED;
-}
-
 static constexpr JSCFunctionListEntry js_raylib_funcs[] = {
 	JS_CFUNC_DEF("InitWindow", 3, js_InitWindow),
 	JS_CFUNC_DEF("WindowShouldClose", 0, js_WindowShouldClose),
@@ -326,9 +298,8 @@ static constexpr JSCFunctionListEntry js_raylib_funcs[] = {
 	JS_CFUNC_DEF("BeginDrawing", 0, js_BeginDrawing),
 	JS_CFUNC_DEF("EndDrawing", 0, js_EndDrawing),
 	JS_CFUNC_DEF("ClearBackground", 1, js_ClearBackground),
-	JS_CFUNC_DEF("WaitTime", 1, js_WaitTime),
 };
 
 void js_define_raylib_core_functions(JSContext *ctx, JSValue target) {
-	JS_SetPropertyFunctionList(ctx, target, js_raylib_funcs, 15);
+	JS_SetPropertyFunctionList(ctx, target, js_raylib_funcs, 14);
 }

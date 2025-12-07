@@ -29,23 +29,8 @@ local cats = {
         --"BeginMode3D",
         --"EndMode3D",
         --"TakeScreenshot",
-        "WaitTime",
+        --"WaitTime",
     }
-}
-
-local raylib_type_to_qjs_type = {
-    ["int"] = "int",
-    ["float"] = "float",
-    ["bool"] = "bool",
-    ["char"] = "string",
-    ["const char *"] = "string",
-    ["short int"] = "int",
-    ["short"] = "int",
-    ["long"] = "int64",
-    ["unsigned int"] = "uint32",
-    ["unsigned char"] = "uint32",
-    ["unsigned short"] = "uint32",
-    ["unsigned long"] = "uint64"
 }
 
 local conversion_map = {
@@ -141,8 +126,7 @@ local function write_structs()
 
     -- add header info
     header:write("// Auto-generated raylib bindings\n")
-    header:write("#ifndef RAYLIB_AUTOGEN_STRUCTS_HPP\n")
-    header:write("#define RAYLIB_AUTOGEN_STRUCTS_HPP\n\n")
+    header:write("#pragma once\n\n")
 
     -- add include
     header:write("#include \"quickjs.h\"\n\n")
@@ -155,8 +139,7 @@ local function write_structs()
     header:write("\n")
 
     -- end header info
-    header:write(string.format("void js_define_raylib_structs(JSContext *ctx, JSValue target);\n\n"))
-    header:write("#endif // RAYLIB_AUTOGEN_STRUCTS_HPP\n")
+    header:write(string.format("void js_define_raylib_structs(JSContext *ctx, JSValue target);\n"))
 
     header:close()
 
@@ -180,7 +163,7 @@ local function write_structs()
     for _, struct in pairs(raylib.structs) do
 
         -- skip unless its Color
-        if struct.name ~= "Color" and struct.name ~= "Vector2" then
+        if struct.name ~= "Color" and struct.name ~= "Vector2" and struct.name ~= "Vector3" then
             goto continue
         end
 
@@ -198,18 +181,16 @@ local function write_structs()
 
             file:write(string.format("static JSValue js_%s_get_%s(JSContext *ctx, const JSValueConst val) {\n", struct.name, prop.name))
             file:write(string.format("\tconst %s *obj = static_cast<%s *>(JS_GetOpaque2(ctx, val, js_%s_class_id));\n", struct.name, struct.name, struct.name))
-            file:write("\tif (!obj) { return JS_EXCEPTION; }\n")
+            file:write("\tif (!obj) { return JS_EXCEPTION; }\n\n")
 
             if conversion then
                 file:write(string.format("\tconst JSValue ret = %s(ctx, obj->%s);\n", conversion.to_js, prop.name))
             else
-                file:write(string.format("\tconst %s val = obj->%s;\n", prop.type, prop.name))
-                file:write(string.format("\t%s* ret_ptr = static_cast<%s*>(js_malloc(ctx, sizeof(%s)));\n", prop.type,
-                    prop.type, prop.type))
+                file:write(string.format("\tconst auto ret_ptr = static_cast<%s*>(js_malloc(ctx, sizeof(%s)));\n", prop.type, prop.type, prop.type))
                 file:write("\tif (!ret_ptr) { return JS_EXCEPTION; }\n")
-                file:write(string.format("\t*ret_ptr = val;\n"))
+                file:write(string.format(string.format("\t*ret_ptr = obj->%s;\n", prop.name)))
                 file:write(string.format("\tconst JSValue ret = JS_NewObjectClass(ctx, js_%s_class_id);\n", struct.name))
-                file:write("\tJS_SetOpaque(ret, ret_ptr);\n")
+                file:write("\tJS_SetOpaque(ret, ret_ptr);\n\n")
             end
 
 
@@ -223,7 +204,7 @@ local function write_structs()
 
             if conversion then
                 file:write(string.format("static JSValue js_%s_set_%s(JSContext *ctx, const JSValueConst this_val, const JSValueConst val) {\n",struct.name, prop.name))
-                file:write(string.format("\t%s *obj = static_cast<%s *>(JS_GetOpaque(this_val, js_%s_class_id));\n", struct.name, struct.name, struct.name))
+                file:write(string.format("\tconst auto obj = static_cast<%s *>(JS_GetOpaque(this_val, js_%s_class_id));\n", struct.name, struct.name, struct.name))
                 file:write("\tif (!obj) { return JS_EXCEPTION; }\n")
                 file:write(string.format("\t%s result;\n", conversion.qjs_type))
                 file:write(string.format("\t%s(ctx, &result, val);\n", conversion.from_js))
@@ -232,6 +213,13 @@ local function write_structs()
                 file:write("}\n\n")
             else
                 file:write(string.format("static JSValue js_%s_set_%s(JSContext *ctx, const JSValueConst this_val, const JSValueConst val) {\n", struct.name, prop.name))
+                file:write(string.format("\tconst auto obj = static_cast<%s *>(JS_GetOpaque(this_val, js_%s_class_id));\n", struct.name, struct.name))
+                file:write("\tif (!obj) { return JS_EXCEPTION; }\n")
+                file:write(string.format("\t%s* val_ptr = static_cast<%s *>(JS_GetOpaque2(ctx, val, js_%s_class_id));\n", prop.type, prop.type, prop.type))
+                file:write("\tif (!val_ptr) { return JS_EXCEPTION; }\n")
+                file:write(string.format("\tobj->%s = *val_ptr;\n", prop.name))
+                file:write("\treturn JS_UNDEFINED;\n")
+                file:write("}\n\n")
             end
         end
 
@@ -249,31 +237,32 @@ local function write_structs()
 
         -- create constructor
         file:write(string.format("static JSValue js_%s_constructor(JSContext *ctx, JSValueConst this_val, int argc, JSValueConst *argv) {\n", struct.name))
-        file:write(string.format("\t%s *obj = static_cast<%s *>(js_malloc(ctx, sizeof(%s)));\n", struct.name, struct.name, struct.name))
+        file:write(string.format("\tconst auto obj = static_cast<%s *>(js_malloc(ctx, sizeof(%s)));\n", struct.name, struct.name))
         file:write("\tif (!obj) { return JS_EXCEPTION; }\n\n")
 
         -- set fields
         for index, prop in pairs(struct.fields) do
             local conversion = conversion_map[prop.type]
+            file:write(string.format("\t// Argument %d: %s %s\n", index, prop.type, prop.name))
             if conversion then
-                file:write(string.format("\t%s %s_val;\n", conversion.qjs_type, prop.name))
-                file:write(string.format("\tif (%s(ctx, &%s_val, argv[%d]) < 0) {\n", conversion.from_js, prop.name, index - 1))
+                file:write(string.format("\t%s %s;\n", conversion.qjs_type, prop.name))
+                file:write(string.format("\tif (%s(ctx, &%s, argv[%d]) < 0) {\n", conversion.from_js, prop.name, index - 1))
                 file:write(string.format("\t\tjs_free(ctx, obj);\n"))
                 file:write(string.format("\t\treturn JS_ThrowTypeError(ctx, \"Argument %d: expected %s\");\n", index, prop.type))
                 file:write("\t}\n")
-                file:write(string.format("\tobj->%s = %s_val;\n\n", prop.name, prop.name))
+                file:write(string.format("\tobj->%s = %s;\n\n", prop.name, prop.name))
             else
-                file:write(string.format("\t%s* %s_val = static_cast<%s *>(JS_GetOpaque2(ctx, argv[%d], js_%s_class_id));\n", prop.type, prop.name, prop.type, index - 1, prop.type))
-                file:write(string.format("\tif (!%s_val) {\n", prop.name))
+                file:write(string.format("\tconst auto %s = static_cast<%s *>(JS_GetOpaque2(ctx, argv[%d], js_%s_class_id));\n", prop.name, prop.type, index - 1, prop.type))
+                file:write(string.format("\tif (!%s) {\n", prop.name))
                 file:write(string.format("\t\tjs_free(ctx, obj);\n"))
                 file:write(string.format("\t\treturn JS_ThrowTypeError(ctx, \"Argument %d: expected %s\");\n", index, prop.type))
                 file:write("\t}\n")
-                file:write(string.format("\tobj->%s = *%s_val;\n", prop.name, prop.name))
+                file:write(string.format("\tobj->%s = *%s;\n\n", prop.name, prop.name))
             end
         end
 
-        file:write(string.format("\tJSValue ret = JS_NewObjectClass(ctx, js_%s_class_id);\n", struct.name))
-        file:write("\tJS_SetOpaque(ret, obj);\n")
+        file:write(string.format("\tconst JSValue ret = JS_NewObjectClass(ctx, js_%s_class_id);\n", struct.name))
+        file:write("\tJS_SetOpaque(ret, obj);\n\n")
         file:write("\treturn ret;\n")
         file:write("}\n\n")
 
@@ -296,7 +285,7 @@ local function write_structs()
     -- write final function to initialize all structs
     file:write("void js_define_raylib_structs(JSContext *ctx, JSValue target) {\n")
     for _, struct in pairs(raylib.structs) do
-        if struct.name ~= "Color" and struct.name ~= "Vector2" then
+        if struct.name ~= "Color" and struct.name ~= "Vector2" and struct.name ~= "Vector3" then
             goto continue2
         end
         file:write(string.format("\tjs_define_raylib_%s_struct(ctx, target);\n", struct.name))
@@ -343,15 +332,13 @@ local function write_functions()
 
         -- add header info
         header:write("// Auto-generated raylib bindings\n")
-        header:write("#ifndef RAYLIB_AUTOGEN_FUNCS_HPP\n")
-        header:write("#define RAYLIB_AUTOGEN_FUNCS_HPP\n\n")
+        header:write("#pragma once\n\n")
 
         -- add include
         header:write("#include \"quickjs.h\"\n\n")
 
         -- end header info
-        header:write(string.format("void js_define_raylib_%s_functions(JSContext *ctx, JSValue target);\n\n", category))
-        header:write("#endif // RAYLIB_AUTOGEN_FUNCS_HPP\n")
+        header:write(string.format("void js_define_raylib_%s_functions(JSContext *ctx, JSValue target);\n", category))
 
         header:close()
 
