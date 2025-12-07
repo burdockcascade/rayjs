@@ -1,0 +1,213 @@
+-- File: raylib_categories.lua
+-- Purpose: A module that returns a table of categorized Raylib functions.
+-- Note: This is a PARTIAL list based on the most common functions.
+-- Use the 'check_categories.lua' script to find and add missing functions.
+
+local categories = {}
+
+-- Functions for window management, game loop, and core system
+categories.core = {
+    "InitWindow",
+    "WindowShouldClose",
+    --"CloseWindow",
+    --"IsWindowReady",
+    --"SetWindowPosition",
+    --"SetWindowTitle",
+    --"GetScreenWidth",
+    --"GetScreenHeight",
+    "SetTargetFPS",
+    --"GetFPS",
+    --"GetFrameTime",
+    --"BeginDrawing",
+    --"EndDrawing",
+    "ClearBackground",
+    --"BeginMode2D",
+    --"EndMode2D",
+    --"BeginMode3D",
+    --"EndMode3D",
+    --"TakeScreenshot",
+    --"WaitTime",
+}
+
+-- Functions for drawing basic 2D shapes
+--categories.shapes = {
+--    "DrawPixel",
+--    "DrawLine",
+--    "DrawCircle",
+--    "DrawCircleGradient",
+--    "DrawCircleLines",
+--    "DrawCircleV",
+--    "DrawRectangle",
+--    "DrawRectangleRec",
+--    "DrawRectangleLines",
+--    "DrawRectangleGradientV",
+--    "DrawTriangle",
+--    "DrawTriangleLines",
+--    "DrawPoly",
+--    "DrawPolyLines",
+--    "CheckCollisionRecs",
+--    "CheckCollisionCircles",
+--    "CheckCollisionCircleRec",
+--    "CheckCollisionPointRec",
+--    "CheckCollisionPointCircle",
+--}
+--
+---- Functions for loading and drawing textures (2D images)
+--categories.textures = {
+--    "LoadImage",
+--    "UnloadImage",
+--    "ExportImage",
+--    "GenImageColor",
+--    "ImageCopy",
+--    "ImageCrop",
+--    "ImageResize",
+--    "ImageDraw",
+--    "ImageDrawText",
+--    "LoadTexture",
+--    "LoadTextureFromImage",
+--    "UnloadTexture",
+--    "GenTextureMipmaps",
+--    "DrawTexture",
+--    "DrawTextureV",
+--    "DrawTextureRec",
+--    "DrawTexturePro",
+--    "LoadRenderTexture",
+--    "UnloadRenderTexture",
+--    "BeginTextureMode",
+--    "EndTextureMode",
+--}
+--
+---- Functions for loading fonts and drawing text
+--categories.text = {
+--    "LoadFont",
+--    "LoadFontEx",
+--    "UnloadFont",
+--    "DrawText",
+--    "DrawTextEx",
+--    "DrawFPS",
+--    "MeasureText",
+--    "MeasureTextEx",
+--    "GetFontDefault",
+--}
+--
+---- Functions for loading and drawing 3D models
+--categories.models = {
+--    "LoadModel",
+--    "UnloadModel",
+--    "DrawModel",
+--    "DrawModelEx",
+--    "DrawBoundingBox",
+--    "DrawCube",
+--    "DrawCubeV",
+--    "DrawSphere",
+--    "DrawCylinder",
+--    "DrawPlane",
+--    "DrawRay",
+--    "DrawGrid",
+--    "LoadMaterialDefault",
+--    "CheckCollisionBoxes",
+--    "CheckCollisionBoxSphere",
+--}
+--
+---- Functions for audio device management, sounds, and music
+--categories.audio = {
+--    "InitAudioDevice",
+--    "CloseAudioDevice",
+--    "IsAudioDeviceReady",
+--    "SetMasterVolume",
+--    "LoadSound",
+--    "UnloadSound",
+--    "PlaySound",
+--    "StopSound",
+--    "PauseSound",
+--    "ResumeSound",
+--    "IsSoundPlaying",
+--    "SetSoundVolume",
+--    "LoadMusicStream",
+--    "UnloadMusicStream",
+--    "PlayMusicStream",
+--    "UpdateMusicStream",
+--    "StopMusicStream",
+--    "PauseMusicStream",
+--    "ResumeMusicStream",
+--    "SetMusicVolume",
+--}
+--
+---- Functions for mouse, keyboard, and gamepad input
+--categories.input = {
+--    "IsKeyPressed",
+--    "IsKeyDown",
+--    "IsKeyReleased",
+--    "IsKeyUp",
+--    "GetKeyPressed",
+--    "SetExitKey",
+--    "IsMouseButtonPressed",
+--    "IsMouseButtonDown",
+--    "IsMouseButtonReleased",
+--    "IsMouseButtonUp",
+--    "GetMouseX",
+--    "GetMouseY",
+--    "GetMousePosition",
+--    "GetMouseWheelMove",
+--    "IsGamepadAvailable",
+--    "GetGamepadName",
+--    "IsGamepadButtonPressed",
+--    "IsGamepadButtonDown",
+--    "GetGamepadAxisMovement",
+--}
+
+-- Built-in colors and other constants
+-- Note: These are not functions, but it's useful to group them.
+--categories.constants = {
+--    "LIGHTGRAY",
+--    "GRAY",
+--    "DARKGRAY",
+--    "YELLOW",
+--    "GOLD",
+--    "ORANGE",
+--    "PINK",
+--    "RED",
+--    "MAROON",
+--    "GREEN",
+--    "LIME",
+--    "DARKGREEN",
+--    "SKYBLUE",
+--    "BLUE",
+--    "DARKBLUE",
+--    "PURPLE",
+--    "VIOLET",
+--    "DARKPURPLE",
+--    "BEIGE",
+--    "BROWN",
+--    "DARKBROWN",
+--    "WHITE",
+--    "BLACK",
+--    "BLANK",
+--    "MAGENTA",
+--    "RAYWHITE",
+--}
+
+-- Math functions (Vector2, Vector3, Quaternion, Matrix)
+-- In many raylib bindings, these are also attached to the main table.
+--categories.math = {
+--    "Vector2Add",
+--    "Vector2Subtract",
+--    "Vector2Length",
+--    "Vector2Normalize",
+--    "Vector2Scale",
+--    "Vector2Distance",
+--    "Vector3Add",
+--    "Vector3Subtract",
+--    "Vector3Length",
+--    "Vector3Normalize",
+--    "Vector3Distance",
+--    "Vector3CrossProduct",
+--    "Vector3DotProduct",
+--    "MatrixIdentity",
+--    "MatrixMultiply",
+--    "MatrixTranslate",
+--    "MatrixRotate",
+--    "MatrixScale",
+--}
+
+return categories

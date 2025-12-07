@@ -10,5 +10,5 @@ add_rules("mode.debug", "mode.release")
 
 target("rayjs")
     set_kind("binary")
-    add_files("src/*.cpp")
+    add_files("src/*.cpp", "src/bindings/*.cpp")
     add_packages("cli11", "raylib", "quickjs-ng")

@@ -1,7 +1,11 @@
 #include "js_runner.hpp"
 #include <iostream>
 #include <fstream>
+#include <raylib.h>
 #include <sstream>
+
+#include "bindings/raylib_autogen_core.hpp"
+#include "bindings/raylib_autogen_structs.hpp"
 
 extern "C" {
     #include <quickjs.h>
@@ -29,7 +33,7 @@ std::string format_js_args(JSContext *ctx, const int argc, const JSValue *argv) 
 // function signature for QuickJS host functions
 static JSValue js_console_log(JSContext *ctx, JSValueConst this_val, const int argc, JSValueConst *argv) {
     // Cast JSValueConst* to JSValue* for use in format_js_args
-    std::string output = format_js_args(ctx, argc, argv);
+    const std::string output = format_js_args(ctx, argc, argv);
 
     // Print the output with a tag for clarity
     std::cout << "[JS LOG]: " << output << std::endl;
@@ -40,7 +44,7 @@ static JSValue js_console_log(JSContext *ctx, JSValueConst this_val, const int a
 
 // function for console.error
 static JSValue js_console_error(JSContext *ctx, JSValueConst this_val, const int argc, JSValueConst *argv) {
-    std::string output = format_js_args(ctx, argc, argv);
+    const std::string output = format_js_args(ctx, argc, argv);
 
     // Print to standard error stream (std::cerr)
     std::cerr << "[JS ERROR]: " << output << std::endl;
@@ -49,7 +53,7 @@ static JSValue js_console_error(JSContext *ctx, JSValueConst this_val, const int
 }
 
 // Array defining the methods of the 'console' object
-static const JSCFunctionListEntry js_console_funcs[] = {
+static constexpr JSCFunctionListEntry js_console_funcs[] = {
     JS_CFUNC_DEF("log", 1, js_console_log),   // 'log' method
     JS_CFUNC_DEF("error", 1, js_console_error) // 'error' method
 };
@@ -80,7 +84,7 @@ void install_console_global(JSContext *ctx) {
 std::string read_file(const std::string& filepath) {
     std::ifstream file(filepath);
     if (!file.is_open()) {
-        std::cerr << "Error: Could not open file: " << filepath << std::endl;
+        TraceLog(LOG_ERROR, "Error: Could not open file '%s' for reading.", filepath.c_str());
         return "";
     }
     // Read the entire file stream into a string
@@ -94,19 +98,18 @@ int run_js_file(const std::string& filepath) {
     // Read the file content
     std::string js_code = read_file(filepath);
     if (js_code.empty()) {
-        // Error message already printed by read_file if it failed to open
         return 1;
     }
 
     // Create a QuickJS Runtime and Context
     JSRuntime *rt = JS_NewRuntime();
     if (!rt) {
-        std::cerr << "Error: Could not create QuickJS runtime." << std::endl;
+        TraceLog(LOG_ERROR, "Error: Could not create QuickJS runtime.");
         return 1;
     }
     JSContext *ctx = JS_NewContext(rt);
     if (!ctx) {
-        std::cerr << "Error: Could not create QuickJS context." << std::endl;
+        TraceLog(LOG_ERROR, "Error: Could not create QuickJS context.");
         JS_FreeRuntime(rt);
         return 1;
     }
@@ -114,19 +117,29 @@ int run_js_file(const std::string& filepath) {
     // Install the 'console' global object
     install_console_global(ctx);
 
+    // Install the 'Raylib' global object and its functions
+    JSValue global_obj = JS_GetGlobalObject(ctx);
+
+    JSValue raylib_obj = JS_NewObject(ctx);
+    JS_SetPropertyStr(ctx, global_obj, "Raylib", raylib_obj);
+
+    js_define_raylib_structs(ctx, raylib_obj);
+    js_define_raylib_core_functions(ctx, raylib_obj);
+
     // Compile and Execute the JavaScript code
     const JSValue val = JS_Eval(ctx, js_code.c_str(), js_code.length(), filepath.c_str(), JS_EVAL_FLAG_STRICT);
 
     // Handle Execution Result (Success or Error)
     if (JS_IsException(val)) {
-        std::cerr << "--- JavaScript Execution Error in " << filepath << " ---" << std::endl;
+
+        TraceLog(LOG_ERROR, "JavaScript execution error in file '%s':", filepath.c_str());
 
         // Get and print the exception object
-        JSValue exception = JS_GetException(ctx);
-        JSValue error_str = JS_ToString(ctx, exception);
+        const JSValue exception = JS_GetException(ctx);
+        const JSValue error_str = JS_ToString(ctx, exception);
         const char *err_msg = JS_ToCString(ctx, error_str);
 
-        std::cerr << err_msg << std::endl;
+        TraceLog(LOG_ERROR, "%s", err_msg);
 
         // Clean up
         JS_FreeCString(ctx, err_msg);
@@ -144,7 +157,7 @@ int run_js_file(const std::string& filepath) {
     JS_FreeContext(ctx);
     JS_FreeRuntime(rt);
 
-    std::cout << "Successfully executed: " << filepath << std::endl;
+    TraceLog(LOG_INFO, "JavaScript file '%s' executed successfully.", filepath.c_str());
     return 0; // Indicate success
 }
 
