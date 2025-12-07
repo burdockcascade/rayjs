@@ -3,13 +3,9 @@
 #include <fstream>
 #include <raylib.h>
 #include <sstream>
-
+#include <quickjs.h>
 #include "bindings/raylib_autogen_core.hpp"
 #include "bindings/raylib_autogen_structs.hpp"
-
-extern "C" {
-    #include <quickjs.h>
-}
 
 // Helper function to format JavaScript arguments into a single string
 std::string format_js_args(JSContext *ctx, const int argc, const JSValue *argv) {
@@ -107,6 +103,7 @@ int run_js_file(const std::string& filepath) {
         TraceLog(LOG_ERROR, "Error: Could not create QuickJS runtime.");
         return 1;
     }
+
     JSContext *ctx = JS_NewContext(rt);
     if (!ctx) {
         TraceLog(LOG_ERROR, "Error: Could not create QuickJS context.");
@@ -132,14 +129,22 @@ int run_js_file(const std::string& filepath) {
     // Handle Execution Result (Success or Error)
     if (JS_IsException(val)) {
 
-        TraceLog(LOG_ERROR, "JavaScript execution error in file '%s':", filepath.c_str());
-
         // Get and print the exception object
         const JSValue exception = JS_GetException(ctx);
         const JSValue error_str = JS_ToString(ctx, exception);
         const char *err_msg = JS_ToCString(ctx, error_str);
 
-        TraceLog(LOG_ERROR, "%s", err_msg);
+        if (JS_IsError(exception)) {
+            JSValue stack_val = JS_GetPropertyStr(ctx, exception, "stack");
+            if (!JS_IsUndefined(stack_val)) {
+                const char *stack_str = JS_ToCString(ctx, stack_val);
+                if (stack_str) {
+                    TraceLog(LOG_ERROR, "JavaScript Error: %s\nStack Trace:\n%s", err_msg, stack_str);
+                    JS_FreeCString(ctx, stack_str);
+                }
+            }
+            JS_FreeValue(ctx, stack_val);
+        }
 
         // Clean up
         JS_FreeCString(ctx, err_msg);
