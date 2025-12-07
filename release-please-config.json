@@ -1,0 +1,9 @@
+{
+  "packages": {
+    ".": {
+      "extra-files": [
+        "xmake.lua"
+      ]
+    }
+  }
+}

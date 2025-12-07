@@ -1,5 +1,5 @@
 set_description("RayJS")
-set_version("0.1.0")
+set_version("0.1.0") -- x-release-please-version
 set_languages("cxx20")
 
 add_requires("cli11 2.6.1")

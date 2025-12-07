@@ -1,0 +1,22 @@
+name: Release
+concurrency:
+  group: build-${{ github.ref }}
+  cancel-in-progress: true
+on:
+  pull_request:
+    branches:
+      - main
+      - master
+  push:
+    branches:
+      - main
+      - master
+jobs:
+  release-please:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: google-github-actions/release-please-action@v4
+        with:
+          # This assumes your config files are in the root
+          config-file: release-please-config.json
+          manifest-file: .release-please-manifest.json

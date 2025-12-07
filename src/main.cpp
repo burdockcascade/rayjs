@@ -2,9 +2,10 @@
 
 #include <iostream>
 #include <CLI/CLI.hpp>
-#include "js_runner.hpp" // Now we include our new runner header
+#include "js_runner.hpp"
 
 int main(const int argc, char** argv) {
+
     // Initialize CLI11 App
     CLI::App app{"QuickJS CLI Runner"};
 
@@ -24,4 +25,5 @@ int main(const int argc, char** argv) {
 
     // Execute the JavaScript code using the new encapsulated function
     return run_js_file(js_filepath);
+
 }
