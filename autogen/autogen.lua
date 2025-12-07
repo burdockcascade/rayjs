@@ -436,11 +436,19 @@ local function write_functions()
             if func.returnType ~= "void" then
                 local return_conversion = conversion_map[func.returnType] and conversion_map[func.returnType]
                 file:write(string.format("\tconst JSValue result = %s(ctx, %s(%s));\n", return_conversion.to_js, func_name, call_params_str))
-                file:write("\treturn result;\n")
             else
                 file:write(string.format("\t%s(%s);\n", func_name, call_params_str))
-                file:write("\treturn JS_UNDEFINED;\n")
+                file:write(string.format("\tconst JSValue result = JS_UNDEFINED;\n\n"))
             end
+
+            -- free any allocated strings
+            for index, value in ipairs(func.params or {}) do
+                if value.type == "const char *" then
+                    file:write(string.format("\tJS_FreeCString(ctx, %s);\n", value.name))
+                end
+            end
+
+            file:write("\treturn result;\n")
 
             file:write("}\n\n")
 

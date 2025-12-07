@@ -64,7 +64,10 @@ static JSValue js_InitWindow(JSContext *ctx, JSValueConst this_val, const int ar
 	}
 
 	InitWindow(width, height, title);
-	return JS_UNDEFINED;
+	const JSValue result = JS_UNDEFINED;
+
+	JS_FreeCString(ctx, title);
+	return result;
 }
 
 // Binding for WindowShouldClose
@@ -84,7 +87,9 @@ static JSValue js_CloseWindow(JSContext *ctx, JSValueConst this_val, const int a
 	}
 
 	CloseWindow();
-	return JS_UNDEFINED;
+	const JSValue result = JS_UNDEFINED;
+
+	return result;
 }
 
 // Binding for IsWindowReady
@@ -140,7 +145,9 @@ static JSValue js_SetWindowPosition(JSContext *ctx, JSValueConst this_val, const
 	}
 
 	SetWindowPosition(x, y);
-	return JS_UNDEFINED;
+	const JSValue result = JS_UNDEFINED;
+
+	return result;
 }
 
 // Binding for SetWindowTitle
@@ -168,7 +175,10 @@ static JSValue js_SetWindowTitle(JSContext *ctx, JSValueConst this_val, const in
 	}
 
 	SetWindowTitle(title);
-	return JS_UNDEFINED;
+	const JSValue result = JS_UNDEFINED;
+
+	JS_FreeCString(ctx, title);
+	return result;
 }
 
 // Binding for GetScreenWidth
@@ -216,7 +226,9 @@ static JSValue js_SetTargetFPS(JSContext *ctx, JSValueConst this_val, const int 
 	}
 
 	SetTargetFPS(fps);
-	return JS_UNDEFINED;
+	const JSValue result = JS_UNDEFINED;
+
+	return result;
 }
 
 // Binding for GetFPS
@@ -246,7 +258,9 @@ static JSValue js_BeginDrawing(JSContext *ctx, JSValueConst this_val, const int 
 	}
 
 	BeginDrawing();
-	return JS_UNDEFINED;
+	const JSValue result = JS_UNDEFINED;
+
+	return result;
 }
 
 // Binding for EndDrawing
@@ -256,7 +270,9 @@ static JSValue js_EndDrawing(JSContext *ctx, JSValueConst this_val, const int ar
 	}
 
 	EndDrawing();
-	return JS_UNDEFINED;
+	const JSValue result = JS_UNDEFINED;
+
+	return result;
 }
 
 // Binding for ClearBackground
@@ -280,7 +296,9 @@ static JSValue js_ClearBackground(JSContext *ctx, JSValueConst this_val, const i
 	}
 
 	ClearBackground(*color);
-	return JS_UNDEFINED;
+	const JSValue result = JS_UNDEFINED;
+
+	return result;
 }
 
 static constexpr JSCFunctionListEntry js_raylib_funcs[] = {

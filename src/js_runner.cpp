@@ -126,6 +126,10 @@ int run_js_file(const std::string& filepath) {
     // Compile and Execute the JavaScript code
     const JSValue val = JS_Eval(ctx, js_code.c_str(), js_code.length(), filepath.c_str(), JS_EVAL_FLAG_STRICT);
 
+    // Free the global object reference
+    JS_FreeValue(ctx, global_obj);
+    JS_FreeValue(ctx, raylib_obj);
+
     // Handle Execution Result (Success or Error)
     if (JS_IsException(val)) {
 
