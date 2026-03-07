@@ -4,7 +4,7 @@ set_languages("cxx20")
 
 add_requires("cli11 2.6.1")
 add_requires("raylib 5.5.0")
-add_requires("quickjs-ng 0.11.0")
+add_requires("quickjs-ng 0.12.1")
 
 add_rules("mode.debug", "mode.release")
 
