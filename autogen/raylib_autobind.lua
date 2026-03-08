@@ -16,7 +16,7 @@ else
 end
 
 local cats = {
-    core = {
+    window = {
         "InitWindow",
         "WindowShouldClose",
         "CloseWindow",
@@ -36,6 +36,13 @@ local cats = {
         "BeginMode3D",
         "EndMode3D",
         "TakeScreenshot"
+    },
+    draw2d = {
+        "DrawPixel",
+        "DrawLine",
+        "DrawCircle",
+        "DrawRectangle",
+        "DrawText",
     }
 }
 
@@ -120,8 +127,8 @@ local function emit(indent_level, file, line)
 end
 
 local function write_structs()
-    local header_file_path = output_dir .. "raylib_autogen_structs.hpp"
-    local source_file_path = output_dir .. "raylib_autogen_structs.cpp"
+    local header_file_path = output_dir .. "raylib_autobind_structs.hpp"
+    local source_file_path = output_dir .. "raylib_autobind_structs.cpp"
 
     local h = {}
     emit(0, h, "// Auto-generated raylib bindings")
@@ -144,7 +151,7 @@ local function write_structs()
     emit(0, cpp, "// Auto-generated raylib bindings")
     emit(0, cpp, "#include \"raylib.h\"")
     emit(0, cpp, "#include \"quickjs.h\"")
-    emit(0, cpp, "#include \"raylib_autogen_structs.hpp\"")
+    emit(0, cpp, "#include \"raylib_autobind_structs.hpp\"")
     emit(0, cpp, "")
 
     for _, struct in pairs(raylib.structs) do
@@ -303,8 +310,8 @@ local function write_functions()
 
     for category, functions in pairs(functions_by_category) do
 
-       local header_file_path = output_dir .. "raylib_autogen_" .. category .. ".hpp"
-       local source_file_path = output_dir .. "raylib_autogen_" .. category .. ".cpp"
+       local header_file_path = output_dir .. "raylib_autobind_" .. category .. ".hpp"
+       local source_file_path = output_dir .. "raylib_autobind_" .. category .. ".cpp"
 
        local h = {}
        local cpp = {}
@@ -331,7 +338,7 @@ local function write_functions()
         emit(0, cpp, "// Auto-generated raylib bindings")
         emit(0, cpp, "#include \"raylib.h\"")
         emit(0, cpp, "#include \"quickjs.h\"")
-        emit(0, cpp, "#include \"raylib_autogen_structs.hpp\"")
+        emit(0, cpp, "#include \"raylib_autobind_structs.hpp\"")
         emit(0, cpp, "")
 
         for _, func in pairs(functions) do

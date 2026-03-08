@@ -1,7 +1,7 @@
 // Auto-generated raylib bindings
 #include "raylib.h"
 #include "quickjs.h"
-#include "raylib_autogen_structs.hpp"
+#include "raylib_autobind_structs.hpp"
 
 // Binding for InitWindow
 static JSValue js_InitWindow(JSContext *ctx, JSValueConst this_val, int argc, JSValueConst *argv) {
@@ -318,6 +318,6 @@ static constexpr JSCFunctionListEntry js_raylib_funcs[] = {
 	JS_CFUNC_DEF("TakeScreenshot", 1, js_TakeScreenshot),
 };
 
-void js_define_raylib_core_functions(JSContext *ctx, JSValue target) {
+void js_define_raylib_window_functions(JSContext *ctx, JSValue target) {
 	JS_SetPropertyFunctionList(ctx, target, js_raylib_funcs, 19);
 }

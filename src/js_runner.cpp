@@ -4,8 +4,7 @@
 #include <raylib.h>
 #include <sstream>
 #include <quickjs.h>
-#include "bindings/raylib_autogen_core.hpp"
-#include "bindings/raylib_autogen_structs.hpp"
+#include "bindings/raylib_autobind.hpp"
 
 // Helper function to format JavaScript arguments into a single string
 std::string format_js_args(JSContext *ctx, const int argc, const JSValue *argv) {
@@ -121,7 +120,7 @@ int run_js_file(const std::string& filepath) {
     JS_SetPropertyStr(ctx, global_obj, "Raylib", raylib_obj);
 
     js_define_raylib_structs(ctx, raylib_obj);
-    js_define_raylib_core_functions(ctx, raylib_obj);
+    js_define_raylib_window_functions(ctx, raylib_obj);
 
     // Compile and Execute the JavaScript code
     const JSValue val = JS_Eval(ctx, js_code.c_str(), js_code.length(), filepath.c_str(), JS_EVAL_FLAG_STRICT);

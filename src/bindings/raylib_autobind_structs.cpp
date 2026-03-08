@@ -1,7 +1,7 @@
 // Auto-generated raylib bindings
 #include "raylib.h"
 #include "quickjs.h"
-#include "raylib_autogen_structs.hpp"
+#include "raylib_autobind_structs.hpp"
 
 static void js_Vector2_finalizer(JSRuntime *rt, JSValue val) {
 	if (auto* ptr = static_cast<Vector2 *>(JS_GetOpaque(val, js_Vector2_class_id))) {
