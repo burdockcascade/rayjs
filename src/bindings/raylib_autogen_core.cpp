@@ -4,300 +4,315 @@
 #include "raylib_autogen_structs.hpp"
 
 // Binding for InitWindow
-static JSValue js_InitWindow(JSContext *ctx, JSValueConst this_val, const int argc, JSValueConst *argv) {
+static JSValue js_InitWindow(JSContext *ctx, JSValueConst this_val, int argc, JSValueConst *argv) {
 	if (argc != 3) {
-		return JS_ThrowTypeError(ctx, "Expected 3 arguments, got %d", argc);
+		return JS_ThrowTypeError(ctx, "InitWindow expects at least 3 arguments, but got %d", argc);
 	}
-
-	// Argument 1: int width
-	if (JS_IsNull(argv[0])) {
-		return JS_ThrowTypeError(ctx, "Argument 1: value is null");
-	}
-
-	if (JS_IsUndefined(argv[0])) {
-		return JS_ThrowTypeError(ctx, "Argument 1: value is undefined");
-	}
-
+	
+	// Validate Arguments
 	if (!JS_IsNumber(argv[0])) {
-		return JS_ThrowTypeError(ctx, "Argument 1: expected int");
+		return JS_ThrowTypeError(ctx, "Argument 1 (width): expected int");
 	}
-
-	int width;
-	if (JS_ToInt32(ctx, &width, argv[0]) < 0) {
-		return JS_ThrowTypeError(ctx, "Argument 1: expected integer");
-	}
-
-	// Argument 2: int height
-	if (JS_IsNull(argv[1])) {
-		return JS_ThrowTypeError(ctx, "Argument 2: value is null");
-	}
-
-	if (JS_IsUndefined(argv[1])) {
-		return JS_ThrowTypeError(ctx, "Argument 2: value is undefined");
-	}
-
 	if (!JS_IsNumber(argv[1])) {
-		return JS_ThrowTypeError(ctx, "Argument 2: expected int");
+		return JS_ThrowTypeError(ctx, "Argument 2 (height): expected int");
 	}
-
-	int height;
-	if (JS_ToInt32(ctx, &height, argv[1]) < 0) {
-		return JS_ThrowTypeError(ctx, "Argument 2: expected integer");
-	}
-
-	// Argument 3: const char * title
-	if (JS_IsNull(argv[2])) {
-		return JS_ThrowTypeError(ctx, "Argument 3: value is null");
-	}
-
-	if (JS_IsUndefined(argv[2])) {
-		return JS_ThrowTypeError(ctx, "Argument 3: value is undefined");
-	}
-
 	if (!JS_IsString(argv[2])) {
-		return JS_ThrowTypeError(ctx, "Argument 3: expected const char *");
+		return JS_ThrowTypeError(ctx, "Argument 3 (title): expected const char *");
 	}
-
-	const char * title = JS_ToCString(ctx, argv[2]);
-	if (!title) {
-		return JS_ThrowTypeError(ctx, "Argument 3: expected string");
-	}
-
+	
+	// Extraction Values
+	int width;
+	JS_ToInt32(ctx, &width, argv[0]);
+	int height;
+	JS_ToInt32(ctx, &height, argv[1]);
+	const char *title = JS_ToCString(ctx, argv[2]);
+	if (!title) return JS_EXCEPTION;
+	
 	InitWindow(width, height, title);
 	const JSValue result = JS_UNDEFINED;
-
 	JS_FreeCString(ctx, title);
 	return result;
 }
 
 // Binding for WindowShouldClose
-static JSValue js_WindowShouldClose(JSContext *ctx, JSValueConst this_val, const int argc, JSValueConst *argv) {
+static JSValue js_WindowShouldClose(JSContext *ctx, JSValueConst this_val, int argc, JSValueConst *argv) {
 	if (argc != 0) {
-		return JS_ThrowTypeError(ctx, "Expected 0 arguments, got %d", argc);
+		return JS_ThrowTypeError(ctx, "WindowShouldClose expects at least 0 arguments, but got %d", argc);
 	}
-
+	
 	const JSValue result = JS_NewBool(ctx, WindowShouldClose());
 	return result;
 }
 
 // Binding for CloseWindow
-static JSValue js_CloseWindow(JSContext *ctx, JSValueConst this_val, const int argc, JSValueConst *argv) {
+static JSValue js_CloseWindow(JSContext *ctx, JSValueConst this_val, int argc, JSValueConst *argv) {
 	if (argc != 0) {
-		return JS_ThrowTypeError(ctx, "Expected 0 arguments, got %d", argc);
+		return JS_ThrowTypeError(ctx, "CloseWindow expects at least 0 arguments, but got %d", argc);
 	}
-
+	
 	CloseWindow();
 	const JSValue result = JS_UNDEFINED;
-
 	return result;
 }
 
 // Binding for IsWindowReady
-static JSValue js_IsWindowReady(JSContext *ctx, JSValueConst this_val, const int argc, JSValueConst *argv) {
+static JSValue js_IsWindowReady(JSContext *ctx, JSValueConst this_val, int argc, JSValueConst *argv) {
 	if (argc != 0) {
-		return JS_ThrowTypeError(ctx, "Expected 0 arguments, got %d", argc);
+		return JS_ThrowTypeError(ctx, "IsWindowReady expects at least 0 arguments, but got %d", argc);
 	}
-
+	
 	const JSValue result = JS_NewBool(ctx, IsWindowReady());
 	return result;
 }
 
 // Binding for SetWindowPosition
-static JSValue js_SetWindowPosition(JSContext *ctx, JSValueConst this_val, const int argc, JSValueConst *argv) {
+static JSValue js_SetWindowPosition(JSContext *ctx, JSValueConst this_val, int argc, JSValueConst *argv) {
 	if (argc != 2) {
-		return JS_ThrowTypeError(ctx, "Expected 2 arguments, got %d", argc);
+		return JS_ThrowTypeError(ctx, "SetWindowPosition expects at least 2 arguments, but got %d", argc);
 	}
-
-	// Argument 1: int x
-	if (JS_IsNull(argv[0])) {
-		return JS_ThrowTypeError(ctx, "Argument 1: value is null");
-	}
-
-	if (JS_IsUndefined(argv[0])) {
-		return JS_ThrowTypeError(ctx, "Argument 1: value is undefined");
-	}
-
+	
+	// Validate Arguments
 	if (!JS_IsNumber(argv[0])) {
-		return JS_ThrowTypeError(ctx, "Argument 1: expected int");
+		return JS_ThrowTypeError(ctx, "Argument 1 (x): expected int");
 	}
-
-	int x;
-	if (JS_ToInt32(ctx, &x, argv[0]) < 0) {
-		return JS_ThrowTypeError(ctx, "Argument 1: expected integer");
-	}
-
-	// Argument 2: int y
-	if (JS_IsNull(argv[1])) {
-		return JS_ThrowTypeError(ctx, "Argument 2: value is null");
-	}
-
-	if (JS_IsUndefined(argv[1])) {
-		return JS_ThrowTypeError(ctx, "Argument 2: value is undefined");
-	}
-
 	if (!JS_IsNumber(argv[1])) {
-		return JS_ThrowTypeError(ctx, "Argument 2: expected int");
+		return JS_ThrowTypeError(ctx, "Argument 2 (y): expected int");
 	}
-
+	
+	// Extraction Values
+	int x;
+	JS_ToInt32(ctx, &x, argv[0]);
 	int y;
-	if (JS_ToInt32(ctx, &y, argv[1]) < 0) {
-		return JS_ThrowTypeError(ctx, "Argument 2: expected integer");
-	}
-
+	JS_ToInt32(ctx, &y, argv[1]);
+	
 	SetWindowPosition(x, y);
 	const JSValue result = JS_UNDEFINED;
-
 	return result;
 }
 
 // Binding for SetWindowTitle
-static JSValue js_SetWindowTitle(JSContext *ctx, JSValueConst this_val, const int argc, JSValueConst *argv) {
+static JSValue js_SetWindowTitle(JSContext *ctx, JSValueConst this_val, int argc, JSValueConst *argv) {
 	if (argc != 1) {
-		return JS_ThrowTypeError(ctx, "Expected 1 arguments, got %d", argc);
+		return JS_ThrowTypeError(ctx, "SetWindowTitle expects at least 1 arguments, but got %d", argc);
 	}
-
-	// Argument 1: const char * title
-	if (JS_IsNull(argv[0])) {
-		return JS_ThrowTypeError(ctx, "Argument 1: value is null");
-	}
-
-	if (JS_IsUndefined(argv[0])) {
-		return JS_ThrowTypeError(ctx, "Argument 1: value is undefined");
-	}
-
+	
+	// Validate Arguments
 	if (!JS_IsString(argv[0])) {
-		return JS_ThrowTypeError(ctx, "Argument 1: expected const char *");
+		return JS_ThrowTypeError(ctx, "Argument 1 (title): expected const char *");
 	}
-
-	const char * title = JS_ToCString(ctx, argv[0]);
-	if (!title) {
-		return JS_ThrowTypeError(ctx, "Argument 1: expected string");
-	}
-
+	
+	// Extraction Values
+	const char *title = JS_ToCString(ctx, argv[0]);
+	if (!title) return JS_EXCEPTION;
+	
 	SetWindowTitle(title);
 	const JSValue result = JS_UNDEFINED;
-
 	JS_FreeCString(ctx, title);
 	return result;
 }
 
 // Binding for GetScreenWidth
-static JSValue js_GetScreenWidth(JSContext *ctx, JSValueConst this_val, const int argc, JSValueConst *argv) {
+static JSValue js_GetScreenWidth(JSContext *ctx, JSValueConst this_val, int argc, JSValueConst *argv) {
 	if (argc != 0) {
-		return JS_ThrowTypeError(ctx, "Expected 0 arguments, got %d", argc);
+		return JS_ThrowTypeError(ctx, "GetScreenWidth expects at least 0 arguments, but got %d", argc);
 	}
-
+	
 	const JSValue result = JS_NewInt32(ctx, GetScreenWidth());
 	return result;
 }
 
 // Binding for GetScreenHeight
-static JSValue js_GetScreenHeight(JSContext *ctx, JSValueConst this_val, const int argc, JSValueConst *argv) {
+static JSValue js_GetScreenHeight(JSContext *ctx, JSValueConst this_val, int argc, JSValueConst *argv) {
 	if (argc != 0) {
-		return JS_ThrowTypeError(ctx, "Expected 0 arguments, got %d", argc);
+		return JS_ThrowTypeError(ctx, "GetScreenHeight expects at least 0 arguments, but got %d", argc);
 	}
-
+	
 	const JSValue result = JS_NewInt32(ctx, GetScreenHeight());
 	return result;
 }
 
 // Binding for SetTargetFPS
-static JSValue js_SetTargetFPS(JSContext *ctx, JSValueConst this_val, const int argc, JSValueConst *argv) {
+static JSValue js_SetTargetFPS(JSContext *ctx, JSValueConst this_val, int argc, JSValueConst *argv) {
 	if (argc != 1) {
-		return JS_ThrowTypeError(ctx, "Expected 1 arguments, got %d", argc);
+		return JS_ThrowTypeError(ctx, "SetTargetFPS expects at least 1 arguments, but got %d", argc);
 	}
-
-	// Argument 1: int fps
-	if (JS_IsNull(argv[0])) {
-		return JS_ThrowTypeError(ctx, "Argument 1: value is null");
-	}
-
-	if (JS_IsUndefined(argv[0])) {
-		return JS_ThrowTypeError(ctx, "Argument 1: value is undefined");
-	}
-
+	
+	// Validate Arguments
 	if (!JS_IsNumber(argv[0])) {
-		return JS_ThrowTypeError(ctx, "Argument 1: expected int");
+		return JS_ThrowTypeError(ctx, "Argument 1 (fps): expected int");
 	}
-
+	
+	// Extraction Values
 	int fps;
-	if (JS_ToInt32(ctx, &fps, argv[0]) < 0) {
-		return JS_ThrowTypeError(ctx, "Argument 1: expected integer");
-	}
-
+	JS_ToInt32(ctx, &fps, argv[0]);
+	
 	SetTargetFPS(fps);
 	const JSValue result = JS_UNDEFINED;
-
 	return result;
 }
 
 // Binding for GetFPS
-static JSValue js_GetFPS(JSContext *ctx, JSValueConst this_val, const int argc, JSValueConst *argv) {
+static JSValue js_GetFPS(JSContext *ctx, JSValueConst this_val, int argc, JSValueConst *argv) {
 	if (argc != 0) {
-		return JS_ThrowTypeError(ctx, "Expected 0 arguments, got %d", argc);
+		return JS_ThrowTypeError(ctx, "GetFPS expects at least 0 arguments, but got %d", argc);
 	}
-
+	
 	const JSValue result = JS_NewInt32(ctx, GetFPS());
 	return result;
 }
 
 // Binding for GetFrameTime
-static JSValue js_GetFrameTime(JSContext *ctx, JSValueConst this_val, const int argc, JSValueConst *argv) {
+static JSValue js_GetFrameTime(JSContext *ctx, JSValueConst this_val, int argc, JSValueConst *argv) {
 	if (argc != 0) {
-		return JS_ThrowTypeError(ctx, "Expected 0 arguments, got %d", argc);
+		return JS_ThrowTypeError(ctx, "GetFrameTime expects at least 0 arguments, but got %d", argc);
 	}
-
+	
 	const JSValue result = JS_NewFloat64(ctx, GetFrameTime());
 	return result;
 }
 
 // Binding for BeginDrawing
-static JSValue js_BeginDrawing(JSContext *ctx, JSValueConst this_val, const int argc, JSValueConst *argv) {
+static JSValue js_BeginDrawing(JSContext *ctx, JSValueConst this_val, int argc, JSValueConst *argv) {
 	if (argc != 0) {
-		return JS_ThrowTypeError(ctx, "Expected 0 arguments, got %d", argc);
+		return JS_ThrowTypeError(ctx, "BeginDrawing expects at least 0 arguments, but got %d", argc);
 	}
-
+	
 	BeginDrawing();
 	const JSValue result = JS_UNDEFINED;
-
 	return result;
 }
 
 // Binding for EndDrawing
-static JSValue js_EndDrawing(JSContext *ctx, JSValueConst this_val, const int argc, JSValueConst *argv) {
+static JSValue js_EndDrawing(JSContext *ctx, JSValueConst this_val, int argc, JSValueConst *argv) {
 	if (argc != 0) {
-		return JS_ThrowTypeError(ctx, "Expected 0 arguments, got %d", argc);
+		return JS_ThrowTypeError(ctx, "EndDrawing expects at least 0 arguments, but got %d", argc);
 	}
-
+	
 	EndDrawing();
 	const JSValue result = JS_UNDEFINED;
-
 	return result;
 }
 
 // Binding for ClearBackground
-static JSValue js_ClearBackground(JSContext *ctx, JSValueConst this_val, const int argc, JSValueConst *argv) {
+static JSValue js_ClearBackground(JSContext *ctx, JSValueConst this_val, int argc, JSValueConst *argv) {
 	if (argc != 1) {
-		return JS_ThrowTypeError(ctx, "Expected 1 arguments, got %d", argc);
+		return JS_ThrowTypeError(ctx, "ClearBackground expects at least 1 arguments, but got %d", argc);
 	}
-
-	// Argument 1: Color color
-	if (JS_IsNull(argv[0])) {
-		return JS_ThrowTypeError(ctx, "Argument 1: value is null");
+	
+	// Validate Arguments
+	if (!JS_IsObject(argv[0])) {
+		return JS_ThrowTypeError(ctx, "Argument 1 (color): expected object of type Color");
 	}
-
-	if (JS_IsUndefined(argv[0])) {
-		return JS_ThrowTypeError(ctx, "Argument 1: value is undefined");
-	}
-
-	Color* color = static_cast<Color *>(JS_GetOpaque2(ctx, argv[0], js_Color_class_id));
-	if (!color) {
-		return JS_ThrowTypeError(ctx, "Argument 1: expected Color");
-	}
-
+	
+	// Extraction Values
+	const auto color = static_cast<Color *>(JS_GetOpaque2(ctx, argv[0], js_Color_class_id));
+	if (!color) return JS_EXCEPTION;
+	
 	ClearBackground(*color);
 	const JSValue result = JS_UNDEFINED;
+	return result;
+}
 
+// Binding for BeginMode2D
+static JSValue js_BeginMode2D(JSContext *ctx, JSValueConst this_val, int argc, JSValueConst *argv) {
+	if (argc != 1) {
+		return JS_ThrowTypeError(ctx, "BeginMode2D expects at least 1 arguments, but got %d", argc);
+	}
+	
+	// Validate Arguments
+	if (!JS_IsObject(argv[0])) {
+		return JS_ThrowTypeError(ctx, "Argument 1 (camera): expected object of type Camera2D");
+	}
+	
+	// Extraction Values
+	const auto camera = static_cast<Camera2D *>(JS_GetOpaque2(ctx, argv[0], js_Camera2D_class_id));
+	if (!camera) return JS_EXCEPTION;
+	
+	BeginMode2D(*camera);
+	const JSValue result = JS_UNDEFINED;
+	return result;
+}
+
+// Binding for EndMode2D
+static JSValue js_EndMode2D(JSContext *ctx, JSValueConst this_val, int argc, JSValueConst *argv) {
+	if (argc != 0) {
+		return JS_ThrowTypeError(ctx, "EndMode2D expects at least 0 arguments, but got %d", argc);
+	}
+	
+	EndMode2D();
+	const JSValue result = JS_UNDEFINED;
+	return result;
+}
+
+// Binding for BeginMode3D
+static JSValue js_BeginMode3D(JSContext *ctx, JSValueConst this_val, int argc, JSValueConst *argv) {
+	if (argc != 1) {
+		return JS_ThrowTypeError(ctx, "BeginMode3D expects at least 1 arguments, but got %d", argc);
+	}
+	
+	// Validate Arguments
+	if (!JS_IsObject(argv[0])) {
+		return JS_ThrowTypeError(ctx, "Argument 1 (camera): expected object of type Camera3D");
+	}
+	
+	// Extraction Values
+	const auto camera = static_cast<Camera3D *>(JS_GetOpaque2(ctx, argv[0], js_Camera3D_class_id));
+	if (!camera) return JS_EXCEPTION;
+	
+	BeginMode3D(*camera);
+	const JSValue result = JS_UNDEFINED;
+	return result;
+}
+
+// Binding for EndMode3D
+static JSValue js_EndMode3D(JSContext *ctx, JSValueConst this_val, int argc, JSValueConst *argv) {
+	if (argc != 0) {
+		return JS_ThrowTypeError(ctx, "EndMode3D expects at least 0 arguments, but got %d", argc);
+	}
+	
+	EndMode3D();
+	const JSValue result = JS_UNDEFINED;
+	return result;
+}
+
+// Binding for TakeScreenshot
+static JSValue js_TakeScreenshot(JSContext *ctx, JSValueConst this_val, int argc, JSValueConst *argv) {
+	if (argc != 1) {
+		return JS_ThrowTypeError(ctx, "TakeScreenshot expects at least 1 arguments, but got %d", argc);
+	}
+	
+	// Validate Arguments
+	if (!JS_IsString(argv[0])) {
+		return JS_ThrowTypeError(ctx, "Argument 1 (fileName): expected const char *");
+	}
+	
+	// Extraction Values
+	const char *fileName = JS_ToCString(ctx, argv[0]);
+	if (!fileName) return JS_EXCEPTION;
+	
+	TakeScreenshot(fileName);
+	const JSValue result = JS_UNDEFINED;
+	JS_FreeCString(ctx, fileName);
+	return result;
+}
+
+// Binding for WaitTime
+static JSValue js_WaitTime(JSContext *ctx, JSValueConst this_val, int argc, JSValueConst *argv) {
+	if (argc != 1) {
+		return JS_ThrowTypeError(ctx, "WaitTime expects at least 1 arguments, but got %d", argc);
+	}
+	
+	// Validate Arguments
+	if (!JS_IsNumber(argv[0])) {
+		return JS_ThrowTypeError(ctx, "Argument 1 (seconds): expected double");
+	}
+	
+	// Extraction Values
+	double seconds;
+	JS_ToFloat64(ctx, &seconds, argv[0]);
+	
+	WaitTime(seconds);
+	const JSValue result = JS_UNDEFINED;
 	return result;
 }
 
@@ -316,8 +331,14 @@ static constexpr JSCFunctionListEntry js_raylib_funcs[] = {
 	JS_CFUNC_DEF("BeginDrawing", 0, js_BeginDrawing),
 	JS_CFUNC_DEF("EndDrawing", 0, js_EndDrawing),
 	JS_CFUNC_DEF("ClearBackground", 1, js_ClearBackground),
+	JS_CFUNC_DEF("BeginMode2D", 1, js_BeginMode2D),
+	JS_CFUNC_DEF("EndMode2D", 0, js_EndMode2D),
+	JS_CFUNC_DEF("BeginMode3D", 1, js_BeginMode3D),
+	JS_CFUNC_DEF("EndMode3D", 0, js_EndMode3D),
+	JS_CFUNC_DEF("TakeScreenshot", 1, js_TakeScreenshot),
+	JS_CFUNC_DEF("WaitTime", 1, js_WaitTime),
 };
 
 void js_define_raylib_core_functions(JSContext *ctx, JSValue target) {
-	JS_SetPropertyFunctionList(ctx, target, js_raylib_funcs, 14);
+	JS_SetPropertyFunctionList(ctx, target, js_raylib_funcs, 20);
 }

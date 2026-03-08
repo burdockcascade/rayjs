@@ -3,42 +3,41 @@
 #include "quickjs.h"
 #include "raylib_autogen_structs.hpp"
 
-static void js_Vector2_finalizer(JSRuntime *rt, const JSValue val) {
-	Vector2 *ptr = static_cast<Vector2 *>(JS_GetOpaque(val, js_Vector2_class_id));
-	if (ptr) { js_free_rt(rt, ptr); }
+static void js_Vector2_finalizer(JSRuntime *rt, JSValue val) {
+	if (auto* ptr = static_cast<Vector2 *>(JS_GetOpaque(val, js_Vector2_class_id))) {
+		js_free_rt(rt, ptr);
+	}
 }
 
-static JSValue js_Vector2_get_x(JSContext *ctx, const JSValueConst val) {
-	const Vector2 *obj = static_cast<Vector2 *>(JS_GetOpaque2(ctx, val, js_Vector2_class_id));
-	if (!obj) { return JS_EXCEPTION; }
-
-	const JSValue ret = JS_NewFloat64(ctx, obj->x);
-	return ret;
+static JSValue js_Vector2_get_x(JSContext *ctx, JSValueConst this_val) {
+	if (const auto* obj = static_cast<const Vector2 *>(JS_GetOpaque2(ctx, this_val, js_Vector2_class_id))) {
+		return JS_NewFloat64(ctx, obj->x);
+	}
+	return JS_EXCEPTION;
 }
 
-static JSValue js_Vector2_get_y(JSContext *ctx, const JSValueConst val) {
-	const Vector2 *obj = static_cast<Vector2 *>(JS_GetOpaque2(ctx, val, js_Vector2_class_id));
-	if (!obj) { return JS_EXCEPTION; }
-
-	const JSValue ret = JS_NewFloat64(ctx, obj->y);
-	return ret;
+static JSValue js_Vector2_get_y(JSContext *ctx, JSValueConst this_val) {
+	if (const auto* obj = static_cast<const Vector2 *>(JS_GetOpaque2(ctx, this_val, js_Vector2_class_id))) {
+		return JS_NewFloat64(ctx, obj->y);
+	}
+	return JS_EXCEPTION;
 }
 
-static JSValue js_Vector2_set_x(JSContext *ctx, const JSValueConst this_val, const JSValueConst val) {
-	const auto obj = static_cast<Vector2 *>(JS_GetOpaque(this_val, js_Vector2_class_id));
-	if (!obj) { return JS_EXCEPTION; }
+static JSValue js_Vector2_set_x(JSContext *ctx, JSValueConst this_val, JSValueConst val) {
+	auto* obj = static_cast<Vector2 *>(JS_GetOpaque2(ctx, this_val, js_Vector2_class_id));
+	if (!obj) return JS_EXCEPTION;
 	double result;
-	JS_ToFloat64(ctx, &result, val);
-	obj->x = result;
+	if (JS_ToFloat64(ctx, &result, val) < 0) return JS_EXCEPTION;
+	obj->x = static_cast<float>(result);
 	return JS_UNDEFINED;
 }
 
-static JSValue js_Vector2_set_y(JSContext *ctx, const JSValueConst this_val, const JSValueConst val) {
-	const auto obj = static_cast<Vector2 *>(JS_GetOpaque(this_val, js_Vector2_class_id));
-	if (!obj) { return JS_EXCEPTION; }
+static JSValue js_Vector2_set_y(JSContext *ctx, JSValueConst this_val, JSValueConst val) {
+	auto* obj = static_cast<Vector2 *>(JS_GetOpaque2(ctx, this_val, js_Vector2_class_id));
+	if (!obj) return JS_EXCEPTION;
 	double result;
-	JS_ToFloat64(ctx, &result, val);
-	obj->y = result;
+	if (JS_ToFloat64(ctx, &result, val) < 0) return JS_EXCEPTION;
+	obj->y = static_cast<float>(result);
 	return JS_UNDEFINED;
 }
 
@@ -53,28 +52,22 @@ static constexpr JSClassDef js_Vector2_class_def = {
 };
 
 static JSValue js_Vector2_constructor(JSContext *ctx, JSValueConst this_val, int argc, JSValueConst *argv) {
-	const auto obj = static_cast<Vector2 *>(js_malloc(ctx, sizeof(Vector2)));
-	if (!obj) { return JS_EXCEPTION; }
-
-	// Argument 1: float x
-	double x;
-	if (JS_ToFloat64(ctx, &x, argv[0]) < 0) {
-		js_free(ctx, obj);
-		return JS_ThrowTypeError(ctx, "Argument 1: expected float");
+	auto* obj = static_cast<Vector2 *>(js_mallocz(ctx, sizeof(Vector2)));
+	if (!obj) return JS_EXCEPTION;
+	
+	if (argc > 0) {
+		double val;
+		if (JS_ToFloat64(ctx, &val, argv[0]) < 0) { js_free(ctx, obj); return JS_EXCEPTION; }
+		obj->x = static_cast<float>(val);
 	}
-	obj->x = x;
-
-	// Argument 2: float y
-	double y;
-	if (JS_ToFloat64(ctx, &y, argv[1]) < 0) {
-		js_free(ctx, obj);
-		return JS_ThrowTypeError(ctx, "Argument 2: expected float");
+	if (argc > 1) {
+		double val;
+		if (JS_ToFloat64(ctx, &val, argv[1]) < 0) { js_free(ctx, obj); return JS_EXCEPTION; }
+		obj->y = static_cast<float>(val);
 	}
-	obj->y = y;
-
-	const JSValue ret = JS_NewObjectClass(ctx, js_Vector2_class_id);
+	auto ret = JS_NewObjectClass(ctx, js_Vector2_class_id);
+	if (JS_IsException(ret)) { js_free(ctx, obj); return JS_EXCEPTION; }
 	JS_SetOpaque(ret, obj);
-
 	return ret;
 }
 
@@ -82,66 +75,66 @@ void js_define_raylib_Vector2_struct(JSContext *ctx, JSValue target) {
 	JSRuntime *rt = JS_GetRuntime(ctx);
 	JS_NewClassID(rt, &js_Vector2_class_id);
 	JS_NewClass(rt, js_Vector2_class_id, &js_Vector2_class_def);
+	
 	const JSValue proto = JS_NewObject(ctx);
 	JS_SetPropertyFunctionList(ctx, proto, js_Vector2_funcs, 2);
 	JS_SetClassProto(ctx, js_Vector2_class_id, proto);
+	
 	const JSValue constructor = JS_NewCFunction2(ctx, js_Vector2_constructor, "Vector2", 0, JS_CFUNC_constructor, 0);
 	JS_SetPropertyStr(ctx, target, "Vector2", constructor);
 }
 
-static void js_Vector3_finalizer(JSRuntime *rt, const JSValue val) {
-	Vector3 *ptr = static_cast<Vector3 *>(JS_GetOpaque(val, js_Vector3_class_id));
-	if (ptr) { js_free_rt(rt, ptr); }
+static void js_Vector3_finalizer(JSRuntime *rt, JSValue val) {
+	if (auto* ptr = static_cast<Vector3 *>(JS_GetOpaque(val, js_Vector3_class_id))) {
+		js_free_rt(rt, ptr);
+	}
 }
 
-static JSValue js_Vector3_get_x(JSContext *ctx, const JSValueConst val) {
-	const Vector3 *obj = static_cast<Vector3 *>(JS_GetOpaque2(ctx, val, js_Vector3_class_id));
-	if (!obj) { return JS_EXCEPTION; }
-
-	const JSValue ret = JS_NewFloat64(ctx, obj->x);
-	return ret;
+static JSValue js_Vector3_get_x(JSContext *ctx, JSValueConst this_val) {
+	if (const auto* obj = static_cast<const Vector3 *>(JS_GetOpaque2(ctx, this_val, js_Vector3_class_id))) {
+		return JS_NewFloat64(ctx, obj->x);
+	}
+	return JS_EXCEPTION;
 }
 
-static JSValue js_Vector3_get_y(JSContext *ctx, const JSValueConst val) {
-	const Vector3 *obj = static_cast<Vector3 *>(JS_GetOpaque2(ctx, val, js_Vector3_class_id));
-	if (!obj) { return JS_EXCEPTION; }
-
-	const JSValue ret = JS_NewFloat64(ctx, obj->y);
-	return ret;
+static JSValue js_Vector3_get_y(JSContext *ctx, JSValueConst this_val) {
+	if (const auto* obj = static_cast<const Vector3 *>(JS_GetOpaque2(ctx, this_val, js_Vector3_class_id))) {
+		return JS_NewFloat64(ctx, obj->y);
+	}
+	return JS_EXCEPTION;
 }
 
-static JSValue js_Vector3_get_z(JSContext *ctx, const JSValueConst val) {
-	const Vector3 *obj = static_cast<Vector3 *>(JS_GetOpaque2(ctx, val, js_Vector3_class_id));
-	if (!obj) { return JS_EXCEPTION; }
-
-	const JSValue ret = JS_NewFloat64(ctx, obj->z);
-	return ret;
+static JSValue js_Vector3_get_z(JSContext *ctx, JSValueConst this_val) {
+	if (const auto* obj = static_cast<const Vector3 *>(JS_GetOpaque2(ctx, this_val, js_Vector3_class_id))) {
+		return JS_NewFloat64(ctx, obj->z);
+	}
+	return JS_EXCEPTION;
 }
 
-static JSValue js_Vector3_set_x(JSContext *ctx, const JSValueConst this_val, const JSValueConst val) {
-	const auto obj = static_cast<Vector3 *>(JS_GetOpaque(this_val, js_Vector3_class_id));
-	if (!obj) { return JS_EXCEPTION; }
+static JSValue js_Vector3_set_x(JSContext *ctx, JSValueConst this_val, JSValueConst val) {
+	auto* obj = static_cast<Vector3 *>(JS_GetOpaque2(ctx, this_val, js_Vector3_class_id));
+	if (!obj) return JS_EXCEPTION;
 	double result;
-	JS_ToFloat64(ctx, &result, val);
-	obj->x = result;
+	if (JS_ToFloat64(ctx, &result, val) < 0) return JS_EXCEPTION;
+	obj->x = static_cast<float>(result);
 	return JS_UNDEFINED;
 }
 
-static JSValue js_Vector3_set_y(JSContext *ctx, const JSValueConst this_val, const JSValueConst val) {
-	const auto obj = static_cast<Vector3 *>(JS_GetOpaque(this_val, js_Vector3_class_id));
-	if (!obj) { return JS_EXCEPTION; }
+static JSValue js_Vector3_set_y(JSContext *ctx, JSValueConst this_val, JSValueConst val) {
+	auto* obj = static_cast<Vector3 *>(JS_GetOpaque2(ctx, this_val, js_Vector3_class_id));
+	if (!obj) return JS_EXCEPTION;
 	double result;
-	JS_ToFloat64(ctx, &result, val);
-	obj->y = result;
+	if (JS_ToFloat64(ctx, &result, val) < 0) return JS_EXCEPTION;
+	obj->y = static_cast<float>(result);
 	return JS_UNDEFINED;
 }
 
-static JSValue js_Vector3_set_z(JSContext *ctx, const JSValueConst this_val, const JSValueConst val) {
-	const auto obj = static_cast<Vector3 *>(JS_GetOpaque(this_val, js_Vector3_class_id));
-	if (!obj) { return JS_EXCEPTION; }
+static JSValue js_Vector3_set_z(JSContext *ctx, JSValueConst this_val, JSValueConst val) {
+	auto* obj = static_cast<Vector3 *>(JS_GetOpaque2(ctx, this_val, js_Vector3_class_id));
+	if (!obj) return JS_EXCEPTION;
 	double result;
-	JS_ToFloat64(ctx, &result, val);
-	obj->z = result;
+	if (JS_ToFloat64(ctx, &result, val) < 0) return JS_EXCEPTION;
+	obj->z = static_cast<float>(result);
 	return JS_UNDEFINED;
 }
 
@@ -157,36 +150,27 @@ static constexpr JSClassDef js_Vector3_class_def = {
 };
 
 static JSValue js_Vector3_constructor(JSContext *ctx, JSValueConst this_val, int argc, JSValueConst *argv) {
-	const auto obj = static_cast<Vector3 *>(js_malloc(ctx, sizeof(Vector3)));
-	if (!obj) { return JS_EXCEPTION; }
-
-	// Argument 1: float x
-	double x;
-	if (JS_ToFloat64(ctx, &x, argv[0]) < 0) {
-		js_free(ctx, obj);
-		return JS_ThrowTypeError(ctx, "Argument 1: expected float");
+	auto* obj = static_cast<Vector3 *>(js_mallocz(ctx, sizeof(Vector3)));
+	if (!obj) return JS_EXCEPTION;
+	
+	if (argc > 0) {
+		double val;
+		if (JS_ToFloat64(ctx, &val, argv[0]) < 0) { js_free(ctx, obj); return JS_EXCEPTION; }
+		obj->x = static_cast<float>(val);
 	}
-	obj->x = x;
-
-	// Argument 2: float y
-	double y;
-	if (JS_ToFloat64(ctx, &y, argv[1]) < 0) {
-		js_free(ctx, obj);
-		return JS_ThrowTypeError(ctx, "Argument 2: expected float");
+	if (argc > 1) {
+		double val;
+		if (JS_ToFloat64(ctx, &val, argv[1]) < 0) { js_free(ctx, obj); return JS_EXCEPTION; }
+		obj->y = static_cast<float>(val);
 	}
-	obj->y = y;
-
-	// Argument 3: float z
-	double z;
-	if (JS_ToFloat64(ctx, &z, argv[2]) < 0) {
-		js_free(ctx, obj);
-		return JS_ThrowTypeError(ctx, "Argument 3: expected float");
+	if (argc > 2) {
+		double val;
+		if (JS_ToFloat64(ctx, &val, argv[2]) < 0) { js_free(ctx, obj); return JS_EXCEPTION; }
+		obj->z = static_cast<float>(val);
 	}
-	obj->z = z;
-
-	const JSValue ret = JS_NewObjectClass(ctx, js_Vector3_class_id);
+	auto ret = JS_NewObjectClass(ctx, js_Vector3_class_id);
+	if (JS_IsException(ret)) { js_free(ctx, obj); return JS_EXCEPTION; }
 	JS_SetOpaque(ret, obj);
-
 	return ret;
 }
 
@@ -194,83 +178,82 @@ void js_define_raylib_Vector3_struct(JSContext *ctx, JSValue target) {
 	JSRuntime *rt = JS_GetRuntime(ctx);
 	JS_NewClassID(rt, &js_Vector3_class_id);
 	JS_NewClass(rt, js_Vector3_class_id, &js_Vector3_class_def);
+	
 	const JSValue proto = JS_NewObject(ctx);
 	JS_SetPropertyFunctionList(ctx, proto, js_Vector3_funcs, 3);
 	JS_SetClassProto(ctx, js_Vector3_class_id, proto);
+	
 	const JSValue constructor = JS_NewCFunction2(ctx, js_Vector3_constructor, "Vector3", 0, JS_CFUNC_constructor, 0);
 	JS_SetPropertyStr(ctx, target, "Vector3", constructor);
 }
 
-static void js_Color_finalizer(JSRuntime *rt, const JSValue val) {
-	Color *ptr = static_cast<Color *>(JS_GetOpaque(val, js_Color_class_id));
-	if (ptr) { js_free_rt(rt, ptr); }
+static void js_Color_finalizer(JSRuntime *rt, JSValue val) {
+	if (auto* ptr = static_cast<Color *>(JS_GetOpaque(val, js_Color_class_id))) {
+		js_free_rt(rt, ptr);
+	}
 }
 
-static JSValue js_Color_get_r(JSContext *ctx, const JSValueConst val) {
-	const Color *obj = static_cast<Color *>(JS_GetOpaque2(ctx, val, js_Color_class_id));
-	if (!obj) { return JS_EXCEPTION; }
-
-	const JSValue ret = JS_NewUint32(ctx, obj->r);
-	return ret;
+static JSValue js_Color_get_r(JSContext *ctx, JSValueConst this_val) {
+	if (const auto* obj = static_cast<const Color *>(JS_GetOpaque2(ctx, this_val, js_Color_class_id))) {
+		return JS_NewUint32(ctx, obj->r);
+	}
+	return JS_EXCEPTION;
 }
 
-static JSValue js_Color_get_g(JSContext *ctx, const JSValueConst val) {
-	const Color *obj = static_cast<Color *>(JS_GetOpaque2(ctx, val, js_Color_class_id));
-	if (!obj) { return JS_EXCEPTION; }
-
-	const JSValue ret = JS_NewUint32(ctx, obj->g);
-	return ret;
+static JSValue js_Color_get_g(JSContext *ctx, JSValueConst this_val) {
+	if (const auto* obj = static_cast<const Color *>(JS_GetOpaque2(ctx, this_val, js_Color_class_id))) {
+		return JS_NewUint32(ctx, obj->g);
+	}
+	return JS_EXCEPTION;
 }
 
-static JSValue js_Color_get_b(JSContext *ctx, const JSValueConst val) {
-	const Color *obj = static_cast<Color *>(JS_GetOpaque2(ctx, val, js_Color_class_id));
-	if (!obj) { return JS_EXCEPTION; }
-
-	const JSValue ret = JS_NewUint32(ctx, obj->b);
-	return ret;
+static JSValue js_Color_get_b(JSContext *ctx, JSValueConst this_val) {
+	if (const auto* obj = static_cast<const Color *>(JS_GetOpaque2(ctx, this_val, js_Color_class_id))) {
+		return JS_NewUint32(ctx, obj->b);
+	}
+	return JS_EXCEPTION;
 }
 
-static JSValue js_Color_get_a(JSContext *ctx, const JSValueConst val) {
-	const Color *obj = static_cast<Color *>(JS_GetOpaque2(ctx, val, js_Color_class_id));
-	if (!obj) { return JS_EXCEPTION; }
-
-	const JSValue ret = JS_NewUint32(ctx, obj->a);
-	return ret;
+static JSValue js_Color_get_a(JSContext *ctx, JSValueConst this_val) {
+	if (const auto* obj = static_cast<const Color *>(JS_GetOpaque2(ctx, this_val, js_Color_class_id))) {
+		return JS_NewUint32(ctx, obj->a);
+	}
+	return JS_EXCEPTION;
 }
 
-static JSValue js_Color_set_r(JSContext *ctx, const JSValueConst this_val, const JSValueConst val) {
-	const auto obj = static_cast<Color *>(JS_GetOpaque(this_val, js_Color_class_id));
-	if (!obj) { return JS_EXCEPTION; }
+static JSValue js_Color_set_r(JSContext *ctx, JSValueConst this_val, JSValueConst val) {
+	auto* obj = static_cast<Color *>(JS_GetOpaque2(ctx, this_val, js_Color_class_id));
+	if (!obj) return JS_EXCEPTION;
 	uint32_t result;
-	JS_ToUint32(ctx, &result, val);
-	obj->r = result;
+	if (JS_ToUint32(ctx, &result, val) < 0) return JS_EXCEPTION;
+	obj->r = static_cast<unsigned char>(result);
 	return JS_UNDEFINED;
 }
 
-static JSValue js_Color_set_g(JSContext *ctx, const JSValueConst this_val, const JSValueConst val) {
-	const auto obj = static_cast<Color *>(JS_GetOpaque(this_val, js_Color_class_id));
-	if (!obj) { return JS_EXCEPTION; }
+static JSValue js_Color_set_g(JSContext *ctx, JSValueConst this_val, JSValueConst val) {
+	auto* obj = static_cast<Color *>(JS_GetOpaque2(ctx, this_val, js_Color_class_id));
+	if (!obj) return JS_EXCEPTION;
 	uint32_t result;
-	JS_ToUint32(ctx, &result, val);
-	obj->g = result;
+	if (JS_ToUint32(ctx, &result, val) < 0) return JS_EXCEPTION;
+	obj->g = static_cast<unsigned char>(result);
 	return JS_UNDEFINED;
 }
 
-static JSValue js_Color_set_b(JSContext *ctx, const JSValueConst this_val, const JSValueConst val) {
-	const auto obj = static_cast<Color *>(JS_GetOpaque(this_val, js_Color_class_id));
-	if (!obj) { return JS_EXCEPTION; }
+static JSValue js_Color_set_b(JSContext *ctx, JSValueConst this_val, JSValueConst val) {
+	auto* obj = static_cast<Color *>(JS_GetOpaque2(ctx, this_val, js_Color_class_id));
+	if (!obj) return JS_EXCEPTION;
 	uint32_t result;
-	JS_ToUint32(ctx, &result, val);
-	obj->b = result;
+	if (JS_ToUint32(ctx, &result, val) < 0) return JS_EXCEPTION;
+	obj->b = static_cast<unsigned char>(result);
 	return JS_UNDEFINED;
 }
 
-static JSValue js_Color_set_a(JSContext *ctx, const JSValueConst this_val, const JSValueConst val) {
-	const auto obj = static_cast<Color *>(JS_GetOpaque(this_val, js_Color_class_id));
-	if (!obj) { return JS_EXCEPTION; }
+static JSValue js_Color_set_a(JSContext *ctx, JSValueConst this_val, JSValueConst val) {
+	auto* obj = static_cast<Color *>(JS_GetOpaque2(ctx, this_val, js_Color_class_id));
+	if (!obj) return JS_EXCEPTION;
 	uint32_t result;
-	JS_ToUint32(ctx, &result, val);
-	obj->a = result;
+	if (JS_ToUint32(ctx, &result, val) < 0) return JS_EXCEPTION;
+	obj->a = static_cast<unsigned char>(result);
 	return JS_UNDEFINED;
 }
 
@@ -287,44 +270,32 @@ static constexpr JSClassDef js_Color_class_def = {
 };
 
 static JSValue js_Color_constructor(JSContext *ctx, JSValueConst this_val, int argc, JSValueConst *argv) {
-	const auto obj = static_cast<Color *>(js_malloc(ctx, sizeof(Color)));
-	if (!obj) { return JS_EXCEPTION; }
-
-	// Argument 1: unsigned char r
-	uint32_t r;
-	if (JS_ToUint32(ctx, &r, argv[0]) < 0) {
-		js_free(ctx, obj);
-		return JS_ThrowTypeError(ctx, "Argument 1: expected unsigned char");
+	auto* obj = static_cast<Color *>(js_mallocz(ctx, sizeof(Color)));
+	if (!obj) return JS_EXCEPTION;
+	
+	if (argc > 0) {
+		uint32_t val;
+		if (JS_ToUint32(ctx, &val, argv[0]) < 0) { js_free(ctx, obj); return JS_EXCEPTION; }
+		obj->r = static_cast<unsigned char>(val);
 	}
-	obj->r = r;
-
-	// Argument 2: unsigned char g
-	uint32_t g;
-	if (JS_ToUint32(ctx, &g, argv[1]) < 0) {
-		js_free(ctx, obj);
-		return JS_ThrowTypeError(ctx, "Argument 2: expected unsigned char");
+	if (argc > 1) {
+		uint32_t val;
+		if (JS_ToUint32(ctx, &val, argv[1]) < 0) { js_free(ctx, obj); return JS_EXCEPTION; }
+		obj->g = static_cast<unsigned char>(val);
 	}
-	obj->g = g;
-
-	// Argument 3: unsigned char b
-	uint32_t b;
-	if (JS_ToUint32(ctx, &b, argv[2]) < 0) {
-		js_free(ctx, obj);
-		return JS_ThrowTypeError(ctx, "Argument 3: expected unsigned char");
+	if (argc > 2) {
+		uint32_t val;
+		if (JS_ToUint32(ctx, &val, argv[2]) < 0) { js_free(ctx, obj); return JS_EXCEPTION; }
+		obj->b = static_cast<unsigned char>(val);
 	}
-	obj->b = b;
-
-	// Argument 4: unsigned char a
-	uint32_t a;
-	if (JS_ToUint32(ctx, &a, argv[3]) < 0) {
-		js_free(ctx, obj);
-		return JS_ThrowTypeError(ctx, "Argument 4: expected unsigned char");
+	if (argc > 3) {
+		uint32_t val;
+		if (JS_ToUint32(ctx, &val, argv[3]) < 0) { js_free(ctx, obj); return JS_EXCEPTION; }
+		obj->a = static_cast<unsigned char>(val);
 	}
-	obj->a = a;
-
-	const JSValue ret = JS_NewObjectClass(ctx, js_Color_class_id);
+	auto ret = JS_NewObjectClass(ctx, js_Color_class_id);
+	if (JS_IsException(ret)) { js_free(ctx, obj); return JS_EXCEPTION; }
 	JS_SetOpaque(ret, obj);
-
 	return ret;
 }
 
@@ -332,9 +303,11 @@ void js_define_raylib_Color_struct(JSContext *ctx, JSValue target) {
 	JSRuntime *rt = JS_GetRuntime(ctx);
 	JS_NewClassID(rt, &js_Color_class_id);
 	JS_NewClass(rt, js_Color_class_id, &js_Color_class_def);
+	
 	const JSValue proto = JS_NewObject(ctx);
 	JS_SetPropertyFunctionList(ctx, proto, js_Color_funcs, 4);
 	JS_SetClassProto(ctx, js_Color_class_id, proto);
+	
 	const JSValue constructor = JS_NewCFunction2(ctx, js_Color_constructor, "Color", 0, JS_CFUNC_constructor, 0);
 	JS_SetPropertyStr(ctx, target, "Color", constructor);
 }

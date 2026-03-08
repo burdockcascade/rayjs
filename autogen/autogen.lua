@@ -1,5 +1,9 @@
 local status, raylib = pcall(require, "raylib")
 
+local script_path = debug.getinfo(1).source:match("@?(.*[\\/])") or ""
+local project_root = script_path .. "../"
+local output_dir = project_root .. "src/bindings/"
+
 -- Check if the library loaded successfully
 if not status then
     print("Error: Could not load the 'raylib' module.")
@@ -24,86 +28,73 @@ local cats = {
         "BeginDrawing",
         "EndDrawing",
         "ClearBackground",
-        --"BeginMode2D",
-        --"EndMode2D",
-        --"BeginMode3D",
-        --"EndMode3D",
-        --"TakeScreenshot",
-        --"WaitTime",
+        "BeginMode2D",
+        "EndMode2D",
+        "BeginMode3D",
+        "EndMode3D",
+        "TakeScreenshot",
+        "WaitTime",
     }
 }
 
-local conversion_map = {
-    ["int"] = {
+-- 1. Define shared logic for common data types
+local types = {
+    int32 = {
         to_js = "JS_NewInt32",
         from_js = "JS_ToInt32",
         qjs_type = "int32_t",
         validation = "JS_IsNumber",
         friendly_name = "integer",
     },
-    ["float"] = {
+    uint32 = {
+        to_js = "JS_NewUint32",
+        from_js = "JS_ToUint32",
+        qjs_type = "uint32_t",
+        validation = "JS_IsNumber",
+        friendly_name = "unsigned integer",
+    },
+    float64 = {
         to_js = "JS_NewFloat64",
         from_js = "JS_ToFloat64",
         qjs_type = "double",
         validation = "JS_IsNumber",
         friendly_name = "number",
     },
-    ["double"] = {
-        to_js = "JS_NewFloat64",
-        from_js = "JS_ToFloat64",
-        qjs_type = "double",
-        validation = "JS_IsNumber",
-        friendly_name = "number",
-    },
-    ["bool"] = {
-        to_js = "JS_NewBool",
-        from_js = "JS_ToBool",
-        qjs_type = "bool",
-        validation = "JS_IsBool",
-        friendly_name = "boolean",
-    },
-    ["char"] = {
-        to_js = "JS_NewInt32",
-        from_js = "JS_ToInt32",
-        qjs_type = "int32_t",
-        friendly_name = "number",
-    },
-    ["const char *"] = {
+    string = {
         to_js = "JS_NewString",
         from_js = "JS_ToCString",
         qjs_type = "const char *",
         validation = "JS_IsString",
         friendly_name = "string",
     },
-    ["short int"] = {
-        to_js = "JS_NewInt32",
-        from_js = "JS_ToInt32",
-        qjs_type = "int32_t",
-    },
-    ["short"] = {
-        to_js = "JS_NewInt32",
-        from_js = "JS_ToInt32",
-        qjs_type = "int32_t",
-    },
+    bool = {
+        to_js = "JS_NewBool",
+        from_js = "JS_ToBool",
+        qjs_type = "bool",
+        validation = "JS_IsBool",
+        friendly_name = "boolean",
+    }
+}
+
+-- 2. Map C types to the shared logic
+local conversion_map = {
+    ["int"]            = types.int32,
+    ["char"]           = types.int32,
+    ["short"]          = types.int32,
+    ["short int"]      = types.int32,
+    ["unsigned int"]   = types.uint32,
+    ["unsigned char"]  = types.uint32,
+    ["unsigned short"] = types.uint32,
+    ["float"]          = types.float64,
+    ["double"]         = types.float64,
+    ["bool"]           = types.bool,
+    ["const char *"]   = types.string,
+
+    -- Longs remain separate as they use 64-bit QuickJS functions
     ["long"] = {
         to_js = "JS_NewInt64",
         from_js = "JS_ToInt64",
         qjs_type = "int64_t",
-    },
-    ["unsigned int"] = {
-        to_js = "JS_NewUint32",
-        from_js = "JS_ToUint32",
-        qjs_type = "uint32_t",
-    },
-    ["unsigned char"] = {
-        to_js = "JS_NewUint32",
-        from_js = "JS_ToUint32",
-        qjs_type = "uint32_t",
-    },
-    ["unsigned short"] = {
-        to_js = "JS_NewUint32",
-        from_js = "JS_ToUint32",
-        qjs_type = "uint32_t",
     },
     ["unsigned long"] = {
         to_js = "JS_NewUint64",
@@ -112,205 +103,195 @@ local conversion_map = {
     }
 }
 
+-- 3. Automatically ingest aliases from raylib.lua
+if raylib.aliases then
+    for _, alias in pairs(raylib.aliases) do
+        if conversion_map[alias.type] then
+            conversion_map[alias.name] = conversion_map[alias.type]
+        end
+    end
+end
+
+local function emit(indent_level, file, line)
+    local indentation = string.rep("\t", indent_level)
+    table.insert(file, indentation .. line)
+end
+
 local function write_structs()
+    local header_file_path = output_dir .. "raylib_autogen_structs.hpp"
+    local source_file_path = output_dir .. "raylib_autogen_structs.cpp"
 
-    -- create/open header file
-    local header_file = "C:\\Workspace\\rayjs\\src\\bindings\\raylib_autogen_structs.hpp"
-    print("Creating file: " .. header_file)
-    local header = io.open(header_file, "w")
+    local h = {}
+    emit(0, h, "// Auto-generated raylib bindings")
+    emit(0, h, "#pragma once")
+    emit(0, h, "#include \"quickjs.h\"")
 
-    if not header then
-        print("Error: Could not open file for writing: " .. header_file)
-        return
-    end
-
-    -- add header info
-    header:write("// Auto-generated raylib bindings\n")
-    header:write("#pragma once\n\n")
-
-    -- add include
-    header:write("#include \"quickjs.h\"\n\n")
-
-    -- class id declarations
     for _, struct in pairs(raylib.structs) do
-        header:write(string.format("inline JSClassID js_%s_class_id;\n", struct.name))
+        emit(0, h, string.format("inline JSClassID js_%s_class_id;", struct.name))
+    end
+    emit(0, h, "")
+    emit(0, h, "void js_define_raylib_structs(JSContext *ctx, JSValue target);")
+
+    local header_file = io.open(header_file_path, "w")
+    if header_file then
+        header_file:write(table.concat(h, "\n") .. "\n")
+        header_file:close()
     end
 
-    header:write("\n")
+    local cpp = {}
+    emit(0, cpp, "// Auto-generated raylib bindings")
+    emit(0, cpp, "#include \"raylib.h\"")
+    emit(0, cpp, "#include \"quickjs.h\"")
+    emit(0, cpp, "#include \"raylib_autogen_structs.hpp\"")
+    emit(0, cpp, "")
 
-    -- end header info
-    header:write(string.format("void js_define_raylib_structs(JSContext *ctx, JSValue target);\n"))
-
-    header:close()
-
-    -- create/open source file
-    local source_file = "C:\\Workspace\\rayjs\\src\\bindings\\raylib_autogen_structs.cpp"
-    print("Creating file: " .. source_file)
-    local file = io.open(source_file, "w")
-
-    if not file then
-        print("Error: Could not open file for writing: " .. source_file)
-        return
-    end
-
-    -- add headers
-    file:write("// Auto-generated raylib bindings\n")
-    file:write("#include \"raylib.h\"\n")
-    file:write("#include \"quickjs.h\"\n")
-    file:write("#include \"raylib_autogen_structs.hpp\"\n\n")
-
-    -- for each struct
     for _, struct in pairs(raylib.structs) do
-
-        -- skip unless its Color
         if struct.name ~= "Color" and struct.name ~= "Vector2" and struct.name ~= "Vector3" then
             goto continue
         end
 
-        print("Generating bindings for struct: " .. struct.name)
+        -- Finalizer
+        emit(0, cpp, string.format("static void js_%s_finalizer(JSRuntime *rt, JSValue val) {", struct.name))
+        emit(1, cpp, string.format("if (auto* ptr = static_cast<%s *>(JS_GetOpaque(val, js_%s_class_id))) {", struct.name, struct.name))
+        emit(2, cpp, "js_free_rt(rt, ptr);")
+        emit(1, cpp, "}")
+        emit(0, cpp, "}")
+        emit(0, cpp, "")
 
-        -- class finalizer
-        file:write(string.format("static void js_%s_finalizer(JSRuntime *rt, const JSValue val) {\n", struct.name))
-        file:write(string.format("\t%s *ptr = static_cast<%s *>(JS_GetOpaque(val, js_%s_class_id));\n", struct.name, struct.name, struct.name))
-        file:write("\tif (ptr) { js_free_rt(rt, ptr); }\n")
-        file:write("}\n\n")
-
-        -- get each property
+        -- Getters
         for _, prop in pairs(struct.fields) do
             local conversion = conversion_map[prop.type]
-
-            file:write(string.format("static JSValue js_%s_get_%s(JSContext *ctx, const JSValueConst val) {\n", struct.name, prop.name))
-            file:write(string.format("\tconst %s *obj = static_cast<%s *>(JS_GetOpaque2(ctx, val, js_%s_class_id));\n", struct.name, struct.name, struct.name))
-            file:write("\tif (!obj) { return JS_EXCEPTION; }\n\n")
+            emit(0, cpp, string.format("static JSValue js_%s_get_%s(JSContext *ctx, JSValueConst this_val) {", struct.name, prop.name))
+            -- Data is only read, so we use const auto*
+            emit(1, cpp, string.format("if (const auto* obj = static_cast<const %s *>(JS_GetOpaque2(ctx, this_val, js_%s_class_id))) {", struct.name, struct.name))
 
             if conversion then
-                file:write(string.format("\tconst JSValue ret = %s(ctx, obj->%s);\n", conversion.to_js, prop.name))
+                emit(2, cpp, string.format("return %s(ctx, obj->%s);", conversion.to_js, prop.name))
             else
-                file:write(string.format("\tconst auto ret_ptr = static_cast<%s*>(js_malloc(ctx, sizeof(%s)));\n", prop.type, prop.type, prop.type))
-                file:write("\tif (!ret_ptr) { return JS_EXCEPTION; }\n")
-                file:write(string.format(string.format("\t*ret_ptr = obj->%s;\n", prop.name)))
-                file:write(string.format("\tconst JSValue ret = JS_NewObjectClass(ctx, js_%s_class_id);\n", struct.name))
-                file:write("\tJS_SetOpaque(ret, ret_ptr);\n\n")
+                emit(2, cpp, string.format("if (auto* ret_ptr = static_cast<%s*>(js_malloc(ctx, sizeof(%s)))) {", prop.type, prop.type))
+                emit(3, cpp, string.format("*ret_ptr = obj->%s;", prop.name))
+                emit(3, cpp, string.format("auto ret = JS_NewObjectClass(ctx, js_%s_class_id);", prop.type))
+                emit(3, cpp, "JS_SetOpaque(ret, ret_ptr);")
+                emit(3, cpp, "return ret;")
+                emit(2, cpp, "}")
             end
-
-
-            file:write("\treturn ret;\n")
-            file:write("}\n\n")
+            emit(1, cpp, "}")
+            emit(1, cpp, "return JS_EXCEPTION;")
+            emit(0, cpp, "}")
+            emit(0, cpp, "")
         end
 
-        -- set each property
+        -- Setters
         for _, prop in pairs(struct.fields) do
             local conversion = conversion_map[prop.type]
+            emit(0, cpp, string.format("static JSValue js_%s_set_%s(JSContext *ctx, JSValueConst this_val, JSValueConst val) {", struct.name, prop.name))
+            emit(1, cpp, string.format("auto* obj = static_cast<%s *>(JS_GetOpaque2(ctx, this_val, js_%s_class_id));", struct.name, struct.name))
+            emit(1, cpp, "if (!obj) return JS_EXCEPTION;")
 
             if conversion then
-                file:write(string.format("static JSValue js_%s_set_%s(JSContext *ctx, const JSValueConst this_val, const JSValueConst val) {\n",struct.name, prop.name))
-                file:write(string.format("\tconst auto obj = static_cast<%s *>(JS_GetOpaque(this_val, js_%s_class_id));\n", struct.name, struct.name, struct.name))
-                file:write("\tif (!obj) { return JS_EXCEPTION; }\n")
-                file:write(string.format("\t%s result;\n", conversion.qjs_type))
-                file:write(string.format("\t%s(ctx, &result, val);\n", conversion.from_js))
-                file:write(string.format("\tobj->%s = result;\n", prop.name))
-                file:write("\treturn JS_UNDEFINED;\n")
-                file:write("}\n\n")
+                emit(1, cpp, string.format("%s result;", conversion.qjs_type))
+                emit(1, cpp, string.format("if (%s(ctx, &result, val) < 0) return JS_EXCEPTION;", conversion.from_js))
+                emit(1, cpp, string.format("obj->%s = static_cast<%s>(result);", prop.name, prop.type))
             else
-                file:write(string.format("static JSValue js_%s_set_%s(JSContext *ctx, const JSValueConst this_val, const JSValueConst val) {\n", struct.name, prop.name))
-                file:write(string.format("\tconst auto obj = static_cast<%s *>(JS_GetOpaque(this_val, js_%s_class_id));\n", struct.name, struct.name))
-                file:write("\tif (!obj) { return JS_EXCEPTION; }\n")
-                file:write(string.format("\t%s* val_ptr = static_cast<%s *>(JS_GetOpaque2(ctx, val, js_%s_class_id));\n", prop.type, prop.type, prop.type))
-                file:write("\tif (!val_ptr) { return JS_EXCEPTION; }\n")
-                file:write(string.format("\tobj->%s = *val_ptr;\n", prop.name))
-                file:write("\treturn JS_UNDEFINED;\n")
-                file:write("}\n\n")
+                emit(1, cpp, string.format("auto* val_ptr = static_cast<%s *>(JS_GetOpaque2(ctx, val, js_%s_class_id));", prop.type, prop.type, prop.type))
+                emit(1, cpp, "if (!val_ptr) return JS_EXCEPTION;")
+                emit(1, cpp, string.format("obj->%s = *val_ptr;", prop.name))
             end
+            emit(1, cpp, "return JS_UNDEFINED;")
+            emit(0, cpp, "}")
+            emit(0, cpp, "")
         end
 
-        -- create function list
-        file:write(string.format("static constexpr JSCFunctionListEntry js_%s_funcs[] = {\n", struct.name))
+        -- Function List
+        emit(0, cpp, string.format("static constexpr JSCFunctionListEntry js_%s_funcs[] = {", struct.name))
         for _, prop in pairs(struct.fields) do
-            file:write(string.format("\tJS_CGETSET_DEF(\"%s\", js_%s_get_%s, js_%s_set_%s),\n", prop.name, struct.name, prop.name, struct.name, prop.name))
+            emit(1, cpp, string.format("JS_CGETSET_DEF(\"%s\", js_%s_get_%s, js_%s_set_%s),", prop.name, struct.name, prop.name, struct.name, prop.name))
         end
-        file:write("};\n\n")
+        emit(0, cpp, "};")
+        emit(0, cpp, "")
 
-        file:write(string.format("static constexpr JSClassDef js_%s_class_def = {\n", struct.name))
-        file:write(string.format("\t.class_name = \"%s\",\n", struct.name))
-        file:write("\t.finalizer = js_" .. struct.name .. "_finalizer,\n")
-        file:write("};\n\n")
+        -- Class Def
+        emit(0, cpp, string.format("static constexpr JSClassDef js_%s_class_def = {", struct.name))
+        emit(1, cpp, string.format(".class_name = \"%s\",", struct.name))
+        emit(1, cpp, string.format(".finalizer = js_%s_finalizer,", struct.name))
+        emit(0, cpp, "};")
+        emit(0, cpp, "")
 
-        -- create constructor
-        file:write(string.format("static JSValue js_%s_constructor(JSContext *ctx, JSValueConst this_val, int argc, JSValueConst *argv) {\n", struct.name))
-        file:write(string.format("\tconst auto obj = static_cast<%s *>(js_malloc(ctx, sizeof(%s)));\n", struct.name, struct.name))
-        file:write("\tif (!obj) { return JS_EXCEPTION; }\n\n")
+        -- Constructor
+        emit(0, cpp, string.format("static JSValue js_%s_constructor(JSContext *ctx, JSValueConst this_val, int argc, JSValueConst *argv) {", struct.name))
+        emit(1, cpp, string.format("auto* obj = static_cast<%s *>(js_mallocz(ctx, sizeof(%s)));", struct.name, struct.name))
+        emit(1, cpp, "if (!obj) return JS_EXCEPTION;")
+        emit(1, cpp, "")
 
-        -- set fields
-        for index, prop in pairs(struct.fields) do
+        for index, prop in ipairs(struct.fields) do
             local conversion = conversion_map[prop.type]
-            file:write(string.format("\t// Argument %d: %s %s\n", index, prop.type, prop.name))
+            emit(1, cpp, string.format("if (argc > %d) {", index - 1))
             if conversion then
-                file:write(string.format("\t%s %s;\n", conversion.qjs_type, prop.name))
-                file:write(string.format("\tif (%s(ctx, &%s, argv[%d]) < 0) {\n", conversion.from_js, prop.name, index - 1))
-                file:write(string.format("\t\tjs_free(ctx, obj);\n"))
-                file:write(string.format("\t\treturn JS_ThrowTypeError(ctx, \"Argument %d: expected %s\");\n", index, prop.type))
-                file:write("\t}\n")
-                file:write(string.format("\tobj->%s = %s;\n\n", prop.name, prop.name))
+                emit(2, cpp, string.format("%s val;", conversion.qjs_type))
+                emit(2, cpp, string.format("if (%s(ctx, &val, argv[%d]) < 0) { js_free(ctx, obj); return JS_EXCEPTION; }", conversion.from_js, index - 1))
+                emit(2, cpp, string.format("obj->%s = static_cast<%s>(val);", prop.name, prop.type))
             else
-                file:write(string.format("\tconst auto %s = static_cast<%s *>(JS_GetOpaque2(ctx, argv[%d], js_%s_class_id));\n", prop.name, prop.type, index - 1, prop.type))
-                file:write(string.format("\tif (!%s) {\n", prop.name))
-                file:write(string.format("\t\tjs_free(ctx, obj);\n"))
-                file:write(string.format("\t\treturn JS_ThrowTypeError(ctx, \"Argument %d: expected %s\");\n", index, prop.type))
-                file:write("\t}\n")
-                file:write(string.format("\tobj->%s = *%s;\n\n", prop.name, prop.name))
+                -- Source pointers are const
+                emit(2, cpp, string.format("if (const auto* ptr = static_cast<const %s*>(JS_GetOpaque2(ctx, argv[%d], js_%s_class_id))) {", prop.type, index - 1, prop.type))
+                emit(3, cpp, string.format("obj->%s = *ptr;", prop.name))
+                emit(2, cpp, "} else { js_free(ctx, obj); return JS_EXCEPTION; }")
             end
+            emit(1, cpp, "}")
         end
 
-        file:write(string.format("\tconst JSValue ret = JS_NewObjectClass(ctx, js_%s_class_id);\n", struct.name))
-        file:write("\tJS_SetOpaque(ret, obj);\n\n")
-        file:write("\treturn ret;\n")
-        file:write("}\n\n")
+        emit(1, cpp, string.format("auto ret = JS_NewObjectClass(ctx, js_%s_class_id);", struct.name))
+        emit(1, cpp, "if (JS_IsException(ret)) { js_free(ctx, obj); return JS_EXCEPTION; }")
+        emit(1, cpp, "JS_SetOpaque(ret, obj);")
+        emit(1, cpp, "return ret;")
+        emit(0, cpp, "}")
+        emit(0, cpp, "")
 
-        -- declare init function
-        file:write(string.format("void js_define_raylib_%s_struct(JSContext *ctx, JSValue target) {\n", struct.name))
-        file:write(string.format("\tJSRuntime *rt = JS_GetRuntime(ctx);\n"))
-        file:write(string.format("\tJS_NewClassID(rt, &js_%s_class_id);\n", struct.name))
-
-        file:write(string.format("\tJS_NewClass(rt, js_%s_class_id, &js_%s_class_def);\n", struct.name, struct.name))
-        file:write(string.format("\tconst JSValue proto = JS_NewObject(ctx);\n"))
-        file:write(string.format("\tJS_SetPropertyFunctionList(ctx, proto, js_%s_funcs, %d);\n", struct.name, #struct.fields))
-        file:write(string.format("\tJS_SetClassProto(ctx, js_%s_class_id, proto);\n", struct.name))
-        file:write(string.format("\tconst JSValue constructor = JS_NewCFunction2(ctx, js_%s_constructor, \"%s\", 0, JS_CFUNC_constructor, 0);\n", struct.name, struct.name))
-        file:write(string.format("\tJS_SetPropertyStr(ctx, target, \"%s\", constructor);\n", struct.name))
-        file:write("}\n\n")
+        -- Init function
+        emit(0, cpp, string.format("void js_define_raylib_%s_struct(JSContext *ctx, JSValue target) {", struct.name))
+        emit(1, cpp, "JSRuntime *rt = JS_GetRuntime(ctx);")
+        emit(1, cpp, string.format("JS_NewClassID(rt, &js_%s_class_id);", struct.name))
+        emit(1, cpp, string.format("JS_NewClass(rt, js_%s_class_id, &js_%s_class_def);", struct.name, struct.name))
+        emit(1, cpp, "")
+        emit(1, cpp, "const JSValue proto = JS_NewObject(ctx);")
+        emit(1, cpp, string.format("JS_SetPropertyFunctionList(ctx, proto, js_%s_funcs, %d);", struct.name, #struct.fields))
+        emit(1, cpp, string.format("JS_SetClassProto(ctx, js_%s_class_id, proto);", struct.name))
+        emit(1, cpp, "")
+        emit(1, cpp, string.format("const JSValue constructor = JS_NewCFunction2(ctx, js_%s_constructor, \"%s\", 0, JS_CFUNC_constructor, 0);", struct.name, struct.name))
+        emit(1, cpp, string.format("JS_SetPropertyStr(ctx, target, \"%s\", constructor);", struct.name))
+        emit(0, cpp, "}")
+        emit(0, cpp, "")
 
         ::continue::
     end
 
-    -- write final function to initialize all structs
-    file:write("void js_define_raylib_structs(JSContext *ctx, JSValue target) {\n")
+    emit(0, cpp, "void js_define_raylib_structs(JSContext *ctx, JSValue target) {")
     for _, struct in pairs(raylib.structs) do
-        if struct.name ~= "Color" and struct.name ~= "Vector2" and struct.name ~= "Vector3" then
-            goto continue2
+        if struct.name == "Color" or struct.name == "Vector2" or struct.name == "Vector3" then
+            emit(1, cpp, string.format("js_define_raylib_%s_struct(ctx, target);", struct.name))
         end
-        file:write(string.format("\tjs_define_raylib_%s_struct(ctx, target);\n", struct.name))
-        ::continue2::
     end
-    file:write("}\n")
+    emit(0, cpp, "}")
 
-    -- close file
-    file:close()
-
+    local source_file = io.open(source_file_path, "w")
+    if source_file then
+        source_file:write(table.concat(cpp, "\n") .. "\n")
+        source_file:close()
+    end
 end
 
 local function write_functions()
 
-    local functions_by_caegory = {}
+    local functions_by_category = {}
     for category, functions in pairs(cats) do
 
-        if not functions_by_caegory[category] then
-            functions_by_caegory[category] = {}
+        if not functions_by_category[category] then
+            functions_by_category[category] = {}
         end
 
         for _, func_name in pairs(functions) do
             for _, func in pairs(raylib.functions) do
                 if func.name == func_name then
-                    table.insert(functions_by_caegory[category], func)
+                    table.insert(functions_by_category[category], func)
                     break
                 end
             end
@@ -318,161 +299,134 @@ local function write_functions()
     end
 
 
-    for category, functions in pairs(functions_by_caegory) do
+    for category, functions in pairs(functions_by_category) do
 
-        -- create/open header file
-        local header_file = "C:\\Workspace\\rayjs\\src\\bindings\\raylib_autogen_" .. category .. ".hpp"
-        print("Creating file: " .. header_file)
-        local header = io.open(header_file, "w")
+       local header_file_path = output_dir .. "raylib_autogen_" .. category .. ".hpp"
+       local source_file_path = output_dir .. "raylib_autogen_" .. category .. ".cpp"
 
-        if not header then
-            print("Error: Could not open file for writing: " .. header_file)
-            return
-        end
+       local h = {}
+       local cpp = {}
 
         -- add header info
-        header:write("// Auto-generated raylib bindings\n")
-        header:write("#pragma once\n\n")
+        emit(0, h, "// Auto-generated raylib bindings")
+        emit(0, h, "#pragma once")
 
         -- add include
-        header:write("#include \"quickjs.h\"\n\n")
+        emit(0, h, "#include \"quickjs.h\"")
 
         -- end header info
-        header:write(string.format("void js_define_raylib_%s_functions(JSContext *ctx, JSValue target);\n", category))
+        emit(0, h, string.format("void js_define_raylib_%s_functions(JSContext *ctx, JSValue target);", category))
 
-        header:close()
-
-        -- create/open source file
-        local source_file = "C:\\Workspace\\rayjs\\src\\bindings\\raylib_autogen_" .. category .. ".cpp"
-        print("Creating file: " .. source_file)
-        local file = io.open(source_file, "w")
-
-        if not file then
-            print("Error: Could not open file for writing: " .. source_file)
-            return
+        -- Write header file
+        local header_file = io.open(header_file_path, "w")
+        if header_file then
+            header_file:write(table.concat(h, "\n") .. "\n")
+            header_file:close()
         end
 
-        -- add headers
-        file:write("// Auto-generated raylib bindings\n")
-        file:write("#include \"raylib.h\"\n")
-        file:write("#include \"quickjs.h\"\n")
-        file:write("#include \"raylib_autogen_structs.hpp\"\n\n")
-
+        -- start cpp
+        local cpp = {}
+        emit(0, cpp, "// Auto-generated raylib bindings")
+        emit(0, cpp, "#include \"raylib.h\"")
+        emit(0, cpp, "#include \"quickjs.h\"")
+        emit(0, cpp, "#include \"raylib_autogen_structs.hpp\"")
+        emit(0, cpp, "")
 
         for _, func in pairs(functions) do
-
             local func_name = func.name
-            local param_count = 0
+            local param_count = func.params and #func.params or 0
 
-            if func.params then
-                param_count = #func.params
-            end
+            emit(0, cpp, string.format("// Binding for %s", func_name))
+            emit(0, cpp, string.format("static JSValue js_%s(JSContext *ctx, JSValueConst this_val, int argc, JSValueConst *argv) {", func_name))
 
-            -- Write the function binding to the file
-            file:write(string.format("// Binding for %s\n", func_name))
-            file:write(string.format("static JSValue js_%s(JSContext *ctx, JSValueConst this_val, const int argc, JSValueConst *argv) {\n", func_name))
+            -- 1. Check Argument Count
+            emit(1, cpp, string.format("if (argc != %d) {", param_count))
+            emit(2, cpp, string.format("return JS_ThrowTypeError(ctx, \"%s expects at least %d arguments, but got %%d\", argc);", func_name, param_count))
+            emit(1, cpp, "}")
+            emit(1, cpp, "")
 
-            -- check arg count
-            file:write(string.format("\tif (argc != %d) {\n", param_count))
-            file:write(string.format("\t\treturn JS_ThrowTypeError(ctx, \"Expected %d arguments, got %%d\", argc);\n", param_count))
-            file:write("\t}\n\n")
-
-            -- for each parameter
-            for index, value in ipairs(func.params or {}) do
-
-                file:write(string.format("\t// Argument %d: %s %s\n", index, value.type, value.name))
-
-                local conversion = conversion_map[value.type] and conversion_map[value.type]
-
-                -- check for null
-                file:write(string.format("\tif (JS_IsNull(argv[%d])) {\n", index - 1))
-                file:write(string.format("\t\treturn JS_ThrowTypeError(ctx, \"Argument %d: value is null\");\n", index))
-                file:write("\t}\n\n")
-
-                -- check for undefined
-                file:write(string.format("\tif (JS_IsUndefined(argv[%d])) {\n", index - 1))
-                file:write(string.format("\t\treturn JS_ThrowTypeError(ctx, \"Argument %d: value is undefined\");\n", index))
-                file:write("\t}\n\n")
-
-                -- validate
-                if conversion and conversion.validation then
-                    file:write(string.format("\tif (!%s(argv[%d])) {\n", conversion.validation, index - 1))
-                    file:write(string.format("\t\treturn JS_ThrowTypeError(ctx, \"Argument %d: expected %s\");\n", index, value.type))
-                    file:write("\t}\n\n")
-                end
-
-                if value.type == "const char *" then
-                    file:write(string.format("\t%s %s = JS_ToCString(ctx, argv[%d]);\n", value.type, value.name, index - 1))
-                    file:write("\tif (!" .. value.name .. ") {\n")
-                    file:write(string.format("\t\treturn JS_ThrowTypeError(ctx, \"Argument %d: expected string\");\n", index))
-                    file:write("\t}\n\n")
-                else
-                    if conversion then
-                        file:write(string.format("\t%s %s;\n", value.type, value.name))
-                        file:write(string.format("\tif (%s(ctx, &%s, argv[%d]) < 0) {\n", conversion.from_js, value.name, index - 1))
-                        file:write(string.format("\t\treturn JS_ThrowTypeError(ctx, \"Argument %d: expected %s\");\n", index, conversion.friendly_name))
-                        file:write("\t}\n\n")
-                    else
-                        file:write(string.format("\t%s* %s = static_cast<%s *>(JS_GetOpaque2(ctx, argv[%d], js_%s_class_id));\n", value.type, value.name, value.type, index - 1, value.type))
-                        file:write(string.format("\tif (!%s) {\n", value.name))
-                        file:write(string.format("\t\treturn JS_ThrowTypeError(ctx, \"Argument %d: expected %s\");\n", index, value.type))
-                        file:write("\t}\n\n")
+            -- Validation (Check types before allocating anything)
+            if (func.params) then
+                emit(1, cpp, "// Validate Arguments")
+                for index, value in ipairs(func.params or {}) do
+                    local conversion = conversion_map[value.type]
+                    if conversion and conversion.validation then
+                        emit(1, cpp, string.format("if (!%s(argv[%d])) {", conversion.validation, index - 1))
+                        emit(2, cpp, string.format("return JS_ThrowTypeError(ctx, \"Argument %d (%s): expected %s\");", index, value.name, value.type))
+                        emit(1, cpp, "}")
+                    elseif not conversion then
+                        -- Opaque object validation
+                        emit(1, cpp, string.format("if (!JS_IsObject(argv[%d])) {", index - 1))
+                        emit(2, cpp, string.format("return JS_ThrowTypeError(ctx, \"Argument %d (%s): expected object of type %s\");", index, value.name, value.type))
+                        emit(1, cpp, "}")
                     end
                 end
+                emit(1, cpp, "")
+
+                -- Extraction/Allocation
+                emit(1, cpp, "// Extraction Values")
+                for index, value in ipairs(func.params or {}) do
+                    local conversion = conversion_map[value.type]
+                    if value.type == "const char *" then
+                        emit(1, cpp, string.format("const char *%s = JS_ToCString(ctx, argv[%d]);", value.name, index - 1))
+                        emit(1, cpp, "if (!" .. value.name .. ") return JS_EXCEPTION;")
+                    elseif conversion then
+                        emit(1, cpp, string.format("%s %s;", value.type, value.name))
+                        emit(1, cpp, string.format("%s(ctx, &%s, argv[%d]);", conversion.from_js, value.name, index - 1))
+                    else
+                        -- Opaque object extraction
+                        emit(1, cpp, string.format("const auto %s = static_cast<%s *>(JS_GetOpaque2(ctx, argv[%d], js_%s_class_id));", value.name, value.type, index - 1, value.type))
+                        emit(1, cpp, string.format("if (!%s) return JS_EXCEPTION;", value.name))
+                    end
+                end
+                emit(1, cpp, "")
             end
 
-            -- generate functon call
+            -- 4. Execution
             local call_params = {}
             for _, param in pairs(func.params or {}) do
-                local fname = param.name
-                if conversion_map[param.type] == nil then
-                    fname = "*" .. param.name
-                end
-                table.insert(call_params, fname)
+                table.insert(call_params, conversion_map[param.type] and param.name or ("*" .. param.name))
             end
             local call_params_str = table.concat(call_params, ", ")
 
-            -- call raylib function
             if func.returnType ~= "void" then
-                local return_conversion = conversion_map[func.returnType] and conversion_map[func.returnType]
-                file:write(string.format("\tconst JSValue result = %s(ctx, %s(%s));\n", return_conversion.to_js, func_name, call_params_str))
+                local ret_conv = conversion_map[func.returnType]
+                emit(1, cpp, string.format("const JSValue result = %s(ctx, %s(%s));", ret_conv.to_js, func_name, call_params_str))
             else
-                file:write(string.format("\t%s(%s);\n", func_name, call_params_str))
-                file:write(string.format("\tconst JSValue result = JS_UNDEFINED;\n\n"))
+                emit(1, cpp, string.format("%s(%s);", func_name, call_params_str))
+                emit(1, cpp, "const JSValue result = JS_UNDEFINED;")
             end
 
-            -- free any allocated strings
+            -- 5. Mandatory Cleanup
             for index, value in ipairs(func.params or {}) do
                 if value.type == "const char *" then
-                    file:write(string.format("\tJS_FreeCString(ctx, %s);\n", value.name))
+                    emit(1, cpp, string.format("JS_FreeCString(ctx, %s);", value.name))
                 end
             end
 
-            file:write("\treturn result;\n")
-
-            file:write("}\n\n")
-
+            emit(1, cpp, "return result;")
+            emit(0, cpp, "}")
+            emit(0, cpp, "")
         end
 
-
-        -- create array defining all functions
-        file:write("static constexpr JSCFunctionListEntry js_raylib_funcs[] = {\n")
+        emit(0, cpp, "static constexpr JSCFunctionListEntry js_raylib_funcs[] = {")
         for _, func in pairs(functions) do
-            local param_count = 0
-            if func.params then
-                param_count = #func.params
-            end
-            file:write(string.format("\tJS_CFUNC_DEF(\"%s\", %d, js_%s),\n", func.name, param_count, func.name))
+            local param_count = func.params and #func.params or 0
+            emit(1, cpp, string.format("JS_CFUNC_DEF(\"%s\", %d, js_%s),", func.name, param_count, func.name))
         end
-        file:write("};\n\n")
+        emit(0, cpp, "};")
+        emit(0, cpp, "")
 
-        -- generate init function
-        file:write(string.format("void js_define_raylib_%s_functions(JSContext *ctx, JSValue target) {\n", category))
-        file:write("\tJS_SetPropertyFunctionList(ctx, target, js_raylib_funcs, " .. tostring(#functions) .. ");\n")
-        file:write("}\n")
+        emit(0, cpp, string.format("void js_define_raylib_%s_functions(JSContext *ctx, JSValue target) {", category))
+        emit(1, cpp, "JS_SetPropertyFunctionList(ctx, target, js_raylib_funcs, " .. tostring(#functions) .. ");")
+        emit(0, cpp, "}")
 
-        -- close file
-        file:close()
+        -- Write source file
+        local source_file = io.open(source_file_path, "w")
+        if source_file then
+            source_file:write(table.concat(cpp, "\n") .. "\n")
+            source_file:close()
+        end
 
     end
 

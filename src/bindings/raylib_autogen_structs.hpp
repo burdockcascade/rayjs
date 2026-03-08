@@ -1,8 +1,6 @@
 // Auto-generated raylib bindings
 #pragma once
-
 #include "quickjs.h"
-
 inline JSClassID js_Vector2_class_id;
 inline JSClassID js_Vector3_class_id;
 inline JSClassID js_Vector4_class_id;
