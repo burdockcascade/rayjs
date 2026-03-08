@@ -1,3 +1,6 @@
+local script_path = debug.getinfo(1).source:match("@?(.*[\\/])") or ""
+package.path = package.path .. ";" .. script_path .. "?.lua"
+
 local status, raylib = pcall(require, "raylib")
 
 local script_path = debug.getinfo(1).source:match("@?(.*[\\/])") or ""
@@ -32,8 +35,7 @@ local cats = {
         "EndMode2D",
         "BeginMode3D",
         "EndMode3D",
-        "TakeScreenshot",
-        "WaitTime",
+        "TakeScreenshot"
     }
 }
 

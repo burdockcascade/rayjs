@@ -296,26 +296,6 @@ static JSValue js_TakeScreenshot(JSContext *ctx, JSValueConst this_val, int argc
 	return result;
 }
 
-// Binding for WaitTime
-static JSValue js_WaitTime(JSContext *ctx, JSValueConst this_val, int argc, JSValueConst *argv) {
-	if (argc != 1) {
-		return JS_ThrowTypeError(ctx, "WaitTime expects at least 1 arguments, but got %d", argc);
-	}
-	
-	// Validate Arguments
-	if (!JS_IsNumber(argv[0])) {
-		return JS_ThrowTypeError(ctx, "Argument 1 (seconds): expected double");
-	}
-	
-	// Extraction Values
-	double seconds;
-	JS_ToFloat64(ctx, &seconds, argv[0]);
-	
-	WaitTime(seconds);
-	const JSValue result = JS_UNDEFINED;
-	return result;
-}
-
 static constexpr JSCFunctionListEntry js_raylib_funcs[] = {
 	JS_CFUNC_DEF("InitWindow", 3, js_InitWindow),
 	JS_CFUNC_DEF("WindowShouldClose", 0, js_WindowShouldClose),
@@ -336,9 +316,8 @@ static constexpr JSCFunctionListEntry js_raylib_funcs[] = {
 	JS_CFUNC_DEF("BeginMode3D", 1, js_BeginMode3D),
 	JS_CFUNC_DEF("EndMode3D", 0, js_EndMode3D),
 	JS_CFUNC_DEF("TakeScreenshot", 1, js_TakeScreenshot),
-	JS_CFUNC_DEF("WaitTime", 1, js_WaitTime),
 };
 
 void js_define_raylib_core_functions(JSContext *ctx, JSValue target) {
-	JS_SetPropertyFunctionList(ctx, target, js_raylib_funcs, 20);
+	JS_SetPropertyFunctionList(ctx, target, js_raylib_funcs, 19);
 }
