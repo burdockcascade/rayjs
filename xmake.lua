@@ -12,8 +12,3 @@ target("rayjs")
     set_kind("binary")
     add_files("src/*.cpp", "src/bindings/*.cpp")
     add_packages("cli11", "raylib", "quickjs-ng")
-
-    before_build(function (target)
-        import("core.base.task")
-        os.exec("lua autogen/autogen.lua")
-    end)
