@@ -3,10 +3,10 @@
 // 1. Initialize the window
 const screenWidth = 800;
 const screenHeight = 450;
-InitWindow(screenWidth, screenHeight, "Raylib meets QuickJS! 🚀");
+Raylib.InitWindow(screenWidth, screenHeight, "Raylib meets QuickJS! 🚀");
 
 // 2. Set FPS
-SetTargetFPS(60);
+Raylib.SetTargetFPS(60);
 
 let circleX = screenWidth / 2;
 const circleY = screenHeight / 2;
@@ -14,7 +14,7 @@ let velocity = 3;
 
 // 3. Main game loop
 // We use the global functions we bound in C++
-while (!WindowShouldClose()) {
+while (!Raylib.WindowShouldClose()) {
     // --- Update Logic ---
     circleX += velocity;
     if (circleX > screenWidth - 50 || circleX < 50) {
@@ -22,19 +22,19 @@ while (!WindowShouldClose()) {
     }
 
     // --- Drawing Logic ---
-    BeginDrawing();
+    Raylib.BeginDrawing();
     
     // ClearBackground uses a pre-defined color 'RAYWHITE' 
     // that we exposed from C++
-    ClearBackground(RAYWHITE); 
+    Raylib.ClearBackground(Raylib.RAYWHITE); 
     
-    DrawText("Hello from JavaScript!", 20, 20, 20, BLUE);
+    Raylib.DrawText("Hello from JavaScript!", 20, 20, 20, Raylib.BLUE);
     
     // DrawCircle uses a custom color object we create here in JS
-    const customColor = { r: 230, g: 41, b: 55, a: 255 }; // A nice red
-    DrawCircle(circleX, circleY, 50, customColor);
+    const customColor = new Color(230, 41, 55, 255); // A nice red
+    Raylib.DrawCircle(circleX, circleY, 50, customColor);
 
-    EndDrawing();
+    Raylib.EndDrawing();
 }
 
 // NOTE: We don't call CloseWindow(). Raylib's InitWindow() registers

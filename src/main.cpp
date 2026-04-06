@@ -1,29 +1,39 @@
-// src/main.cpp (Updated)
-
-#include <iostream>
 #include <CLI/CLI.hpp>
-#include "js_runner.hpp"
+#include <raylib.h>
+#include <string>
+#include <exception> // Added for std::exception
+#include "runner.hpp"
 
 int main(const int argc, char** argv) {
 
-    // Initialize CLI11 App
-    CLI::App app{"QuickJS CLI Runner"};
+    SetTraceLogLevel(LOG_INFO);
 
-    // Define the --file flag
-    std::string js_filepath;
-    app.add_option("-f,--file", js_filepath, "Path to the JavaScript file to execute")
+    CLI::App args{"QuickJS Raylib Runner"};
+
+    // Required option for script path
+    std::string scriptPath;
+    args.add_option("script", scriptPath, "Path to the JS game script")
         ->required()
         ->check(CLI::ExistingFile);
 
-    // Parse arguments
-    try {
-        app.parse(argc, argv);
-    } catch (const CLI::ParseError &e) {
-        // Handle argument parsing errors
-        return app.exit(e);
+    // Optional flag for verbose logging
+    bool verbose = false;
+    args.add_flag("-v,--verbose", verbose, "Enable verbose logging");
+
+    // Enable verbose logging if the flag is set
+    if (verbose) {
+        SetTraceLogLevel(LOG_DEBUG);
     }
 
-    // Execute the JavaScript code using the new encapsulated function
-    return run_js_file(js_filepath);
+    CLI11_PARSE(args, argc, argv);
 
+    try {
+        Runner runner(scriptPath);
+        runner.Run();
+    } catch (const std::exception& e) {
+        TraceLog(LOG_ERROR, "%s", e.what());
+        return 1;
+    }
+
+    return 0;
 }
